@@ -1,0 +1,14 @@
+[project]
+name = "xx2html"
+version = "0.5.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bs4>=0.0.2",
+    "lxml>=5.3.0",
+    "openpyxl>=3.1.5",
+    "pillow>=11.0.0",
+    "xlsx2html>=0.6.1",
+]
+# authors = ["gonzalo covarrubias <gocova.dev@gmail.com>"]
