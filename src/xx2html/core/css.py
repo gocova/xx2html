@@ -3,7 +3,7 @@ from openpyxl.cell import Cell
 from openpyxl.styles.colors import Color
 
 from xx2html.core.types import CovaCell
-from condif2css.color import aRGB_to_CSS
+from condif2css.color import aRGB_to_css
 
 from kivy.logger import Logger
 
@@ -54,7 +54,7 @@ class CssRegistry:
             class_name = f"xlsx_cell_font_color_{aRGB}"
 
             if class_name not in self.classes:
-                self.classes[class_name] = f"color: {aRGB_to_CSS(aRGB)};"
+                self.classes[class_name] = f"color: {aRGB_to_css(aRGB)};"
             return class_name
         else:
             return None
@@ -65,7 +65,7 @@ class CssRegistry:
             class_name = f"xlsx_cell_background_color_{aRGB}"
 
             if class_name not in self.classes:
-                self.classes[class_name] = f"background-color : {aRGB_to_CSS(aRGB)}"
+                self.classes[class_name] = f"background-color : {aRGB_to_css(aRGB)}"
 
             return class_name
         else:
@@ -110,7 +110,7 @@ class CssRegistry:
         if aRGB is not None:
             class_name = f"{class_name}_{aRGB}"
             class_value = (
-                f"{class_value} border-{direction}-color: {aRGB_to_CSS(aRGB)};"
+                f"{class_value} border-{direction}-color: {aRGB_to_css(aRGB)};"
             )
 
         if class_name not in self.classes:
@@ -169,7 +169,7 @@ def create_get_css_components_from_cell(css_registry: CssRegistry):
         # with contextlib.suppress(AttributeError):
         if hasattr(cell, "fill") and hasattr(cell.fill, "patternType"):
             patternType = cell.fill.patternType
-            if  patternType == "solid":
+            if patternType == "solid":
                 background_color_class = css_registry.register_background_color(
                     cell.fill.fgColor
                 )
