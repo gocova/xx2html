@@ -27,8 +27,8 @@ def get_xlsx_transform(
     fonts_html: str,
     core_css: str,
     user_css: str,
-    replace_samedoc_links: bool = True,
-    prepare_iframe_noscript: bool = True,
+    update_local_links: bool = True,
+    # prepare_iframe_noscript: bool = True,
 ) -> Callable[[str, str, str], Tuple[bool, None | str]]:
     def xlsx_transform(
         source: str, dest: str, locale: str
@@ -65,6 +65,7 @@ def get_xlsx_transform(
                 logging.warning(
                     f"Transform (wb|incell): Unable to read incell images due to: {repr(incell_exc)}"
                 )
+                # archive = None
             finally:
                 if incell_images is None:
                     incell_images = dict()
@@ -119,13 +120,14 @@ def get_xlsx_transform(
             generated_css = "\n".join([f".{k} {{ {v} }}" for k, v in classes.items()])
 
             if archive:
-                logging.debug("Transform (wb|incell): Preparing incell images output...")
-                generated_incell_css = get_incell_css(
-                    vm_ids
-                    , vm_ids_dimension_references
-                    , incell_images
-                    , archive
+                logging.debug(
+                    "Transform (wb|incell): Preparing incell images output..."
                 )
+                generated_incell_css = get_incell_css(
+                    vm_ids, vm_ids_dimension_references, incell_images, archive
+                )
+            else:
+                generated_incell_css = ""
 
             logging.debug("Transform (html|1): Preparing html (pass 1)")
             html = (
@@ -146,8 +148,7 @@ def get_xlsx_transform(
 
             logging.debug("Transform (html|2): Updating links...")
             html_2 = update_links(
-                html
-                , enc_names
+                html, enc_names, update_local_links=update_local_links
             )
 
             logging.info(f"Transform (out): Writing output: {dest}")
