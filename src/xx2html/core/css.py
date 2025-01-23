@@ -5,7 +5,7 @@ from openpyxl.styles.colors import Color
 from xx2html.core.types import CovaCell
 from condif2css.color import aRGB_to_css
 
-from kivy.logger import Logger
+import logging
 
 DEFAULT_BORDER_STYLE = (
     "border-{direction}-style: solid; border-{direction}-width: 1px; "
@@ -178,7 +178,7 @@ def create_get_css_components_from_cell(css_registry: CssRegistry):
                 # h_styles["background-color"] = get_css_color(cell.fill.fgColor)
             elif patternType is not None:
                 # TODO patternType != 'solid'
-                Logger.warning(
+                 logging.warning(
                     f"css (components): Pattern type is not supported: {cell.fill.patternType}"
                 )
 

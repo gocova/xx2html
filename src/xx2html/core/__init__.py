@@ -22,7 +22,7 @@ apply_patches()
 
 def get_xlsx_transform(
     sheet_html: str,
-    link_html: str,
+    sheetname_html: str,
     index_html: str,
     fonts_html: str,
     core_css: str,
@@ -111,7 +111,7 @@ def get_xlsx_transform(
                     )
 
                     links.append(
-                        link_html.format(
+                        sheetname_html.format(
                             enc_sheet_name=enc_sheet_name, sheet_name=sheet_name
                         )
                     )
