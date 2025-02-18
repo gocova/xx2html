@@ -1,10 +1,11 @@
-from typing import Tuple, Callable
+from typing import Set, Tuple, Callable
 
+from condif2css.css import CssBuilder, CssRulesRegistry
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
-from openpyxl.cell import Cell
+from openpyxl.cell import Cell, MergedCell
 from xx2html.core.types import CovaCell
-from xx2html.core.css import CssRegistry
+# from xx2html.core.css import CssRegistry
 from xlsx2html.core import (
     rows_from_range,
     format_cell,
@@ -26,8 +27,11 @@ CELL_HEIGHT__DEFAULT = 19  # 19px
 
 def get_worksheet_contents(
     ws: Worksheet,
-    css_registry: CssRegistry,
-    get_css_components_from_cell: Callable[[Cell | CovaCell, dict], Tuple[dict, set]],
+    # css_registry: CssRegistry,
+    # get_css_components_from_cell: Callable[[Cell | CovaCell, dict], Tuple[dict, set]],
+    css_rules_registry: CssRulesRegistry,
+    css_builder: CssBuilder,
+    get_css_from_cell: Callable[[Cell | CovaCell | MergedCell, dict], Set[str]],
     locale: None | str = None,
     ws_index: int = -1,
 ):
@@ -66,7 +70,7 @@ def get_worksheet_contents(
 
         excluded_cells.remove(m_cell.coordinate)
 
-    def process_cell(col_idx: int, cell: Cell | CovaCell) -> None:
+    def process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
         row_dim = ws.row_dimensions[cell.row]
 
         if cell.coordinate in excluded_cells or row_dim.hidden:
@@ -84,9 +88,12 @@ def get_worksheet_contents(
         if isinstance(value, str):
             value = unescape(value)
 
-        cell_height_class = css_registry.register_height(height)
+        # cell_height_class = css_registry.register_height(height)
+        cell_height_class = css_rules_registry.register(
+            [css_builder.height(height)]
+        )
         classes = set([cell_height_class])
-        vm_id = 0 if not hasattr(cell, "_vm_id") else cell._vm_id
+        vm_id = 0 if not hasattr(cell, "_vm_id") else getattr(cell, "_vm_id")
 
         cell_data = {  # initialization of cell_data
             "attrs": {"id": get_cell_id(cell)},
@@ -129,10 +136,11 @@ def get_worksheet_contents(
                 merged_cell_info["attrs"]
             )
 
-        new_styles, new_classes = get_css_components_from_cell(cell, merged_cell_info)
-        cell_data["style"].update(  # Update cell_data style
-            new_styles
-        )
+        # new_styles, new_classes = get_css_components_from_cell(cell, merged_cell_info)
+        # cell_data["style"].update(  # Update cell_data style
+        #     new_styles
+        # )
+        new_classes = get_css_from_cell(cell, merged_cell_info)
         cell_data["classes"].update(  # Update cell_data classes
             new_classes
         )
@@ -140,7 +148,7 @@ def get_worksheet_contents(
 
     columns_dimensions: dict = {}
 
-    def first_row__process_cell(col_idx: int, cell: Cell | CovaCell) -> None:
+    def first_row__process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
         nonlocal columns_dimensions
         column_letter = get_column_letter(col_idx + 1)
         columns_dimensions[column_letter] = {

@@ -1,14 +1,46 @@
+# SPDX-FileCopyrightText: 2025 Jose Gonzalo Covarrubias
 [project]
 name = "xx2html"
-version = "0.5.0"
+authors = [
+    { name = "Jose Gonzalo Covarrubias", email = "gocova.dev@gmail.com" },
+]
 description = "Add your description here"
+license = "MIT OR Apache-2.0"
+license-files = ["LICEN[CS]E*"]
 readme = "README.md"
-requires-python = ">=3.12"
 dependencies = [
     "bs4>=0.0.2",
-    "lxml>=5.3.0",
+    "lxml>=5.3.1",
+    "mvin>=0.5.0b4",
     "openpyxl>=3.1.5",
     "pillow>=11.0.0",
     "xlsx2html>=0.6.1",
 ]
-# authors = ["gonzalo covarrubias <gocova.dev@gmail.com>"]
+dynamic = ["version"]
+requires-python = ">=3.9,<4.0"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    # "License :: OSI Approved :: MIT License",
+    # "License :: OSI Approved :: Apache Software License",
+    "Development Status :: 4 - Beta",
+]
+
+[project.urls]
+# Homepage = "https://example.com"
+# Documentation = "https://readthedocs.org"
+# Repository = "https://github.com/me/spam.git"
+# Issues = "https://github.com/me/spam/issues"
+# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm]
+version = { source = "file", path = "src/xx2html/_constants.py" }
+distribution = true

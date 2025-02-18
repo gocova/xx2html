@@ -12,10 +12,12 @@ from xx2html.core.patches.openpyxl import apply_patches
 from .incell import get_incell_css
 from .links import update_links
 from .utils import cova__render_table, get_worksheet_contents
-from .css import CssRegistry, create_get_css_components_from_cell
+# from .css import CssRegistry, create_get_css_components_from_cell
+from condif2css.processor import process
 from condif2css.themes import get_theme_colors
 from condif2css.core import create_themed_get_css_color
-
+from condif2css.color import aRGB_to_css
+from condif2css.css import CssBuilder, CssRulesRegistry, create_get_css_from_cell
 
 apply_patches()
 
@@ -39,18 +41,27 @@ def get_xlsx_transform(
 
             links = []
             html_tables = []
-            classes = {}
+            # classes = {}
 
             logging.info(f"Transform (wb): Reading '{source}' as xlsx file...")
             wb = load_workbook(source, data_only=True, rich_text=True)
 
             logging.debug("Transform (wb|css): Reading theme colors...")
             theme_aRGBs_list = get_theme_colors(wb)
-            get_css_color = create_themed_get_css_color(theme_aRGBs_list)
-            css_registry = CssRegistry(get_css_color, classes)
-            get_css_components_from_cell = create_get_css_components_from_cell(
-                css_registry
-            )
+            # get_css_color = create_themed_get_css_color(theme_aRGBs_list)
+            # css_registry = CssRegistry(get_css_color, classes)
+            # get_css_components_from_cell = create_get_css_components_from_cell(
+            #     css_registry
+            # )
+            pre_get_css_color = create_themed_get_css_color(theme_aRGBs_list)
+            def get_css_color(color):
+                argb_color = pre_get_css_color(color)
+                if argb_color is None:
+                    return None
+                return aRGB_to_css(argb_color)
+            css_builder = CssBuilder(get_css_color)
+            css_registry = CssRulesRegistry()
+            get_css_from_cell = create_get_css_from_cell(css_registry, css_builder= css_builder)
 
             logging.debug("Transform (wb|incell): Reading incell images...")
             incell_images = None
@@ -92,9 +103,12 @@ def get_xlsx_transform(
 
                     contents = get_worksheet_contents(
                         ws,
-                        css_registry,
-                        get_css_components_from_cell,
-                        locale,
+                        # css_registry,
+                        # get_css_components_from_cell,
+                        css_rules_registry= css_registry,
+                        css_builder= css_builder,
+                        get_css_from_cell= get_css_from_cell,
+                        locale=locale,
                         ws_index=ws_index,
                     )
 
@@ -117,7 +131,8 @@ def get_xlsx_transform(
                         )
                     )
 
-            generated_css = "\n".join([f".{k} {{ {v} }}" for k, v in classes.items()])
+            # generated_css = "\n".join([f".{k} {{ {v} }}" for k, v in classes.items()])
+            generated_css = "\n".join(css_registry.get_rules())
 
             if archive:
                 logging.debug(
