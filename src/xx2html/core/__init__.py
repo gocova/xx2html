@@ -1,17 +1,20 @@
-from typing import Tuple, Callable
+from typing import Set, Tuple, Callable, List
 
 import logging
 from zipfile import ZipFile
 
 from openpyxl import load_workbook
 from openpyxl.packaging.relationship import get_dependents
+from openpyxl.styles.differential import DifferentialStyleList
 
 # Monkey patch!
+from xx2html.core.cf import apply_cf_styles
 from xx2html.core.patches.openpyxl import apply_patches
 
 from .incell import get_incell_css
 from .links import update_links
 from .utils import cova__render_table, get_worksheet_contents
+
 # from .css import CssRegistry, create_get_css_components_from_cell
 from condif2css.processor import process
 from condif2css.themes import get_theme_colors
@@ -31,6 +34,7 @@ def get_xlsx_transform(
     user_css: str,
     update_local_links: bool = True,
     # prepare_iframe_noscript: bool = True,
+    apply_cf: bool = False
 ) -> Callable[[str, str, str], Tuple[bool, None | str]]:
     def xlsx_transform(
         source: str, dest: str, locale: str
@@ -54,17 +58,28 @@ def get_xlsx_transform(
             #     css_registry
             # )
             pre_get_css_color = create_themed_get_css_color(theme_aRGBs_list)
+
             def get_css_color(color):
                 argb_color = pre_get_css_color(color)
                 if argb_color is None:
                     return None
                 return aRGB_to_css(argb_color)
+
             css_builder = CssBuilder(get_css_color)
             css_registry = CssRulesRegistry()
-            get_css_from_cell = create_get_css_from_cell(css_registry, css_builder= css_builder)
+            get_css_from_cell = create_get_css_from_cell(
+                css_registry, css_builder=css_builder
+            )
+
+            # conditional formatting vars
+            css_cf_registry = CssRulesRegistry(prefix="xx2h_cf")
+            get_cf_css_from_diff = create_get_css_from_cell(
+                css_registry=css_cf_registry, css_builder=css_builder
+            )
 
             logging.debug("Transform (wb|incell): Reading incell images...")
             incell_images = None
+            archive = None
             try:
                 archive = ZipFile(source, "r")
                 incell_image_rels = get_dependents(
@@ -88,6 +103,8 @@ def get_xlsx_transform(
 
             sheets_names = wb.sheetnames
 
+            effective_cf_rules_details = {}  # all conditional formatting rules
+
             for sheet_name in sheets_names:
                 ws = wb[sheet_name]
 
@@ -105,9 +122,9 @@ def get_xlsx_transform(
                         ws,
                         # css_registry,
                         # get_css_components_from_cell,
-                        css_rules_registry= css_registry,
-                        css_builder= css_builder,
-                        get_css_from_cell= get_css_from_cell,
+                        css_rules_registry=css_registry,
+                        css_builder=css_builder,
+                        get_css_from_cell=get_css_from_cell,
                         locale=locale,
                         ws_index=ws_index,
                     )
@@ -131,6 +148,12 @@ def get_xlsx_transform(
                         )
                     )
 
+                    if apply_cf:
+                        logging.info(
+                            f"Application (wb|cf): Processing conditional formatting for '{sheet_name}'"
+                        )
+                        effective_cf_rules_details.update(process(ws))
+
             # generated_css = "\n".join([f".{k} {{ {v} }}" for k, v in classes.items()])
             generated_css = "\n".join(css_registry.get_rules())
 
@@ -144,7 +167,27 @@ def get_xlsx_transform(
             else:
                 generated_incell_css = ""
 
-            logging.debug("Transform (html|1): Preparing html (pass 1)")
+            logging.info(
+                f"Transform (html|1): Pass 1 --> Preparing {len(effective_cf_rules_details)} conditional formatting styles..."
+            )
+            cf_styles_rels: List[Tuple[str, str, Set[str]]] = []
+            if hasattr(wb, "_differential_styles") and isinstance(
+                wb._differential_styles,  # type: ignore
+                DifferentialStyleList,
+            ):
+                # print(effective_cf_rules_details)
+                for full_ref, details in effective_cf_rules_details.items():
+                    sheet_name, cell_ref, _, dxf_id, _ = details
+                    class_names = get_cf_css_from_diff(
+                        wb._differential_styles[dxf_id],  # type: ignore
+                        is_important=True,
+                    )
+                    cf_styles_rels.append((sheet_name, cell_ref, class_names))
+                # print(css_cf_registry.get_rules())
+            print(cf_styles_rels)
+
+            logging.debug("Transform (html|2): Pass 2 --> Preparing html")
+
             html = (
                 index_html.format(
                     sheets_generated_html="\n".join(html_tables),
@@ -155,19 +198,24 @@ def get_xlsx_transform(
                     user_css_html=f"<style>{user_css}</style>",
                     generated_css_html=f"<style>{generated_css}</style>",
                     generated_incell_css_html=f"<style>{generated_incell_css}</style>",
-                    conditional_css_html="<style>/*conditional formatting*/</style>",
+                    conditional_css_html=f"<style>/*conditional formatting*/\n{'\n'.join(css_cf_registry.get_rules())}</style>",
                 )
                 .replace('"$"', "$")
                 .replace('"-"', "-")
             )
 
-            logging.debug("Transform (html|2): Updating links...")
+            logging.debug("Transform (html|3): Pass 3 --> Updating links...")
             html_2 = update_links(
                 html, enc_names, update_local_links=update_local_links
             )
 
+            logging.debug(
+                "Transform (html|4): Pass 4 --> Applying conditional formatting styles..."
+            )
+            html_3 = apply_cf_styles(html_2, cf_styles_rels)
+
             logging.info(f"Transform (out): Writing output: {dest}")
-            output.write(html_2)
+            output.write(html_3)
             output.flush()
             logging.info(f"Transform (out): Closing output: {dest}")
             output.close()
