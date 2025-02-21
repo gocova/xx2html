@@ -184,7 +184,8 @@ def get_xlsx_transform(
                     )
                     cf_styles_rels.append((sheet_name, cell_ref, class_names))
                 # print(css_cf_registry.get_rules())
-            print(cf_styles_rels)
+            logging.debug(
+                f"Transform: Resulting conditional formatting styles: {cf_styles_rels}")
 
             logging.debug("Transform (html|2): Pass 2 --> Preparing html")
 
