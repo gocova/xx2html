@@ -34,7 +34,8 @@ def get_xlsx_transform(
     user_css: str,
     update_local_links: bool = True,
     # prepare_iframe_noscript: bool = True,
-    apply_cf: bool = False
+    apply_cf: bool = False,
+    fail_ok: bool = True,
 ) -> Callable[[str, str, str], Tuple[bool, None | str]]:
     def xlsx_transform(
         source: str, dest: str, locale: str
@@ -152,7 +153,7 @@ def get_xlsx_transform(
                         logging.info(
                             f"Application (wb|cf): Processing conditional formatting for '{sheet_name}'"
                         )
-                        effective_cf_rules_details.update(process(ws))
+                        effective_cf_rules_details.update(process(ws, fail_ok=fail_ok))
 
             # generated_css = "\n".join([f".{k} {{ {v} }}" for k, v in classes.items()])
             generated_css = "\n".join(css_registry.get_rules())
@@ -185,7 +186,8 @@ def get_xlsx_transform(
                     cf_styles_rels.append((sheet_name, cell_ref, class_names))
                 # print(css_cf_registry.get_rules())
             logging.debug(
-                f"Transform: Resulting conditional formatting styles: {cf_styles_rels}")
+                f"Transform: Resulting conditional formatting styles: {cf_styles_rels}"
+            )
 
             logging.debug("Transform (html|2): Pass 2 --> Preparing html")
 
