@@ -32,6 +32,7 @@ def get_xlsx_transform(
     fonts_html: str,
     core_css: str,
     user_css: str,
+    safari_js:str,
     update_local_links: bool = True,
     # prepare_iframe_noscript: bool = True,
     apply_cf: bool = False,
@@ -189,30 +190,37 @@ def get_xlsx_transform(
                 f"Transform: Resulting conditional formatting styles: {cf_styles_rels}"
             )
 
-            logging.debug("Transform (html|2): Pass 2 --> Preparing html")
+            logging.info("Transform (html|2): Pass 2 --> Preparing html")
 
-            html = (
-                index_html.format(
-                    sheets_generated_html="\n".join(html_tables),
-                    sheets_names_generated_html="\n".join(links),
-                    source_filename=source,
-                    fonts_html=fonts_html,
-                    core_css_html=f"<style>{core_css}</style>",
-                    user_css_html=f"<style>{user_css}</style>",
-                    generated_css_html=f"<style>{generated_css}</style>",
-                    generated_incell_css_html=f"<style>{generated_incell_css}</style>",
-                    conditional_css_html=f"<style>/*conditional formatting*/\n{'\n'.join(css_cf_registry.get_rules())}</style>",
+            try:
+                html = (
+                    index_html.format(
+                        sheets_generated_html="\n".join(html_tables),
+                        sheets_names_generated_html="\n".join(links),
+                        source_filename=source,
+                        fonts_html=fonts_html,
+                        core_css_html=f"<style>{core_css}</style>",
+                        user_css_html=f"<style>{user_css}</style>",
+                        generated_css_html=f"<style>{generated_css}</style>",
+                        generated_incell_css_html=f"<style>{generated_incell_css}</style>",
+                        safari_js=f"<script>{safari_js}</script>",
+                        conditional_css_html=f"<style>/*conditional formatting*/\n{'\n'.join(css_cf_registry.get_rules())}</style>",
+                    )
+                    .replace('"$"', "$")
+                    .replace('"-"', "-")
                 )
-                .replace('"$"', "$")
-                .replace('"-"', "-")
-            )
+            except Exception as inner_e:
+                logging.error(
+                    "Transform (html|2): There was an error while applying the provided templates!"
+                )
+                raise inner_e
 
-            logging.debug("Transform (html|3): Pass 3 --> Updating links...")
+            logging.info("Transform (html|3): Pass 3 --> Updating links...")
             html_2 = update_links(
                 html, enc_names, update_local_links=update_local_links
             )
 
-            logging.debug(
+            logging.info(
                 "Transform (html|4): Pass 4 --> Applying conditional formatting styles..."
             )
             html_3 = apply_cf_styles(html_2, cf_styles_rels)
