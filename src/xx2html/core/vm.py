@@ -107,16 +107,16 @@ def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], RuntimeErr
         incell_image_rels = get_dependents(
             archive, _RICHVALUE_REL_XML_RELS
         )
-        # incell_images = ([(x.Id, x.Target) for x in incell_image_rels]
-        incell_images = dict([
-            (
-                str(i), y
-            )
-            for i, y in enumerate([
-                y[1] for y in
-                sorted([ (x.Id, x.Target) for x in incell_image_rels])
-            ])
-        ])
+        incell_images = dict([(x.Id, x.Target) for x in incell_image_rels])
+        # incell_images = dict([
+        #     (
+        #         str(i), y
+        #     )
+        #     for i, y in enumerate([
+        #         y[1] for y in
+        #         sorted([ (x.Id, x.Target) for x in incell_image_rels])
+        #     ])
+        # ])
         logging.info(f"get_incell_images_refs: incell_images -> {incell_images}")
 
         rdrichvalue_structure_tree, err = get_xml_from_archive(
@@ -129,9 +129,9 @@ def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], RuntimeErr
                 (
                     index,
                     (lambda x : incell_images.get(
-                        x[0].text, None) \
+                        f"rId{int(x[0].text)+1}", None) \
                         # f"rId{x[0].text}", None) \
-                        if len(x) == 2  and x.get("s", None) == index \
+                        if len(x) == 2  and x.get("s", None) == index and try_parse_int(x[0].text) is not None \
                             else None
                     )
                     # lambda x: f"'{index}' == '{x.get("s", None)}' --> {index == x.get("s", None)}"
