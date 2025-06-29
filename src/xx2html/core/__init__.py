@@ -14,6 +14,7 @@ from xx2html.core.patches.openpyxl import apply_patches
 from .incell import get_incell_css
 from .links import update_links
 from .utils import cova__render_table, get_worksheet_contents
+from .vm import get_incell_images_refs
 
 # from .css import CssRegistry, create_get_css_components_from_cell
 from condif2css.processor import process
@@ -80,23 +81,27 @@ def get_xlsx_transform(
             )
 
             logging.debug("Transform (wb|incell): Reading incell images...")
-            incell_images = None
+            incell_images_refs = {}
             archive = None
             try:
                 archive = ZipFile(source, "r")
-                incell_image_rels = get_dependents(
-                    archive, "xl/richData/_rels/richValueRel.xml.rels"
-                )
-                incell_images = dict([(x.Id, x.Target) for x in incell_image_rels])
+                # incell_image_rels = get_dependents(
+                #     archive, "xl/richData/_rels/richValueRel.xml.rels"
+                # )
+                # incell_images.update(dict([(x.Id, x.Target) for x in incell_image_rels]))
+
+                incell_images_refs, err = get_incell_images_refs(archive)
+                if err is not None:
+                    raise err
                 logging.info("Transform (wb|incell): Reading complete!")
+
             except Exception as incell_exc:
                 logging.warning(
                     f"Transform (wb|incell): Unable to read incell images due to: {repr(incell_exc)}"
                 )
                 # archive = None
-            finally:
-                if incell_images is None:
-                    incell_images = dict()
+            
+            
 
             vm_ids = set()
             vm_ids_dimension_references = dict()
@@ -131,6 +136,7 @@ def get_xlsx_transform(
                         ws_index=ws_index,
                     )
 
+                    logging.info(f" {enc_sheet_name} --> vm_ids: {contents["vm_ids"]}")
                     vm_ids.update(contents["vm_ids"])
                     vm_ids_dimension_references.update(
                         contents["vm_ids_dimension_references"]
@@ -164,7 +170,7 @@ def get_xlsx_transform(
                     "Transform (wb|incell): Preparing incell images output..."
                 )
                 generated_incell_css = get_incell_css(
-                    vm_ids, vm_ids_dimension_references, incell_images, archive
+                    vm_ids, vm_ids_dimension_references, incell_images_refs, archive
                 )
             else:
                 generated_incell_css = ""

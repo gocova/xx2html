@@ -93,7 +93,7 @@ def get_worksheet_contents(
             [css_builder.height(height)]
         )
         classes = set([cell_height_class])
-        vm_id = 0 if not hasattr(cell, "_vm_id") else getattr(cell, "_vm_id")
+        vm_id = None if not hasattr(cell, "_vm_id") else getattr(cell, "_vm_id")
 
         cell_data = {  # initialization of cell_data
             "attrs": {"id": get_cell_id(cell)},
@@ -106,7 +106,7 @@ def get_worksheet_contents(
             "vm_id": vm_id,
         }
 
-        if vm_id > 0:
+        if isinstance(vm_id, str):
             cell_class_name = f"cell_{ws_index}_{col_idx}_{row_i}"
 
             cell_data.update({"formatted_value": ""})
@@ -115,6 +115,7 @@ def get_worksheet_contents(
                 [
                     f"vm-richvaluerel_rid{vm_id}",
                     cell_class_name,
+                    "incell-image"
                 ]
             )
 
@@ -300,7 +301,7 @@ def cova__render_table(
                     attrs_str=render_attrs(cell["attrs"]),
                     styles_str=render_inline_styles(cell["style"]),
                     formatted_images="\n".join(formatted_images),
-                    incell_image="<img ></img>" if cell["vm_id"] > 0 else "",
+                    incell_image="<img ></img>" if isinstance(cell["vm_id"], str) else "",
                     classes_str=" ".join(cell["classes"]),
                     **cell,
                 )

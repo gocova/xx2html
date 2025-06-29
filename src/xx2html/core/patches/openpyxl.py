@@ -25,13 +25,13 @@ def cova_parse_cell(self, element):
     data_type = element.get("t", "n")
     coordinate = element.get("r")
     style_id = element.get("s", 0)
-    vm_id = element.get("vm", 0)
+    vm_id = element.get("vm", None)
 
     if style_id:
         style_id = int(style_id)
 
-    if vm_id:
-        vm_id = int(vm_id)
+    # if vm_id:
+    #     vm_id = int(vm_id)
 
     if data_type == "inlineStr":
         value = None
