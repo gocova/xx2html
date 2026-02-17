@@ -1,9 +1,12 @@
 import logging
-from typing import List, Set, Tuple
 from bs4 import BeautifulSoup
 
+from xx2html.core.types import ConditionalFormattingRelation
 
-def apply_cf_styles(html: str, cf_style_relations: List[Tuple[str, str, Set[str]]]) -> str:
+
+def apply_cf_styles(
+    html: str, cf_style_relations: list[ConditionalFormattingRelation]
+) -> str:
     soup = BeautifulSoup(html, "lxml")
     for sheet_name, cell_ref, class_names in cf_style_relations:
         class_names_str = " ".join(class_names)

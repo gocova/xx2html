@@ -20,7 +20,7 @@ from openpyxl.cell.text import Text
 from xx2html.core.types import CovaCell
 
 
-def cova_parse_cell(self, element):
+def cova_parse_cell(self, element) -> dict[str, object]:
     """
     Parse a cell element into a dictionary containing the cell's row, column, value, data type, style id, and vm id.
 
@@ -97,7 +97,7 @@ def cova_parse_cell(self, element):
     }
 
 
-def cova_bind_cells(self):
+def cova_bind_cells(self) -> None:
     """
     Bind CovaCells to the worksheet.
 
@@ -109,23 +109,23 @@ def cova_bind_cells(self):
     for idx, row in self.parser.parse():
         for cell in row:
             style = self.ws.parent._cell_styles[cell["style_id"]]
-            c = CovaCell(
+            cova_cell = CovaCell(
                 self.ws,
                 row=cell["row"],
                 column=cell["column"],
                 style_array=style,
                 vm_id=cell["vm_id"],
             )
-            c._value = cell["value"]
-            c.data_type = cell["data_type"]
+            cova_cell._value = cell["value"]
+            cova_cell.data_type = cell["data_type"]
 
-            self.ws._cells[(cell["row"], cell["column"])] = c
+            self.ws._cells[(cell["row"], cell["column"])] = cova_cell
 
     if self.ws._cells:
         self.ws._current_row = self.ws.max_row  # use cells not row dimensions
 
 
 
-def apply_patches():
+def apply_patches() -> None:
     WorkSheetParser.parse_cell = cova_parse_cell
     WorksheetReader.bind_cells = cova_bind_cells

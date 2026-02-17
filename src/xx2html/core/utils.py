@@ -1,10 +1,17 @@
-from typing import Callable, Set
+from collections.abc import Callable
+from typing import TypedDict
 
 from condif2css.css import CssBuilder, CssRulesRegistry
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.cell import Cell, MergedCell
-from xx2html.core.types import CovaCell
+from xx2html.core.types import (
+    CellDimensions,
+    CellRenderData,
+    ColumnRenderData,
+    CovaCell,
+    WorksheetContents,
+)
 # from xx2html.core.css import CssRegistry
 from xlsx2html.core import (
     rows_from_range,
@@ -31,15 +38,23 @@ def get_worksheet_contents(
     # get_css_components_from_cell: Callable[[Cell | CovaCell, dict], Tuple[dict, set]],
     css_rules_registry: CssRulesRegistry,
     css_builder: CssBuilder,
-    get_css_from_cell: Callable[[Cell | CovaCell | MergedCell, dict], Set[str]],
+    get_css_from_cell: Callable[[Cell | CovaCell | MergedCell, dict], set[str]],
     locale: None | str = None,
     ws_index: int = -1,
-):
+) -> WorksheetContents:
+    class VmCellLayoutEntry(TypedDict):
+        class_name: str
+        vm_id: str
+        col_idx_1_based: int
+        row_idx_1_based: int
+        colspan: int
+        rowspan: int
+
     merged_cell_map = {}
-    used_vm_ids = []
-    vm_ids_dimension_references = {}
-    vm_cell_vm_ids = {}
-    vm_cells_layout = []
+    used_vm_ids: set[str] = set()
+    vm_ids_dimension_references: dict[str, CellDimensions] = {}
+    vm_cell_vm_ids: dict[str, str] = {}
+    vm_cells_layout: list[VmCellLayoutEntry] = []
 
     merged_cell_ranges = [cell_range.coord for cell_range in ws.merged_cells.ranges]
     excluded_cells = set(
@@ -80,6 +95,9 @@ def get_worksheet_contents(
         return CELL_HEIGHT__DEFAULT
 
     def process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
+        if not cell or cell.row is None:
+            logging.warning("Cell without row information found, skipping processing.")
+            return
         row_dim = ws.row_dimensions[cell.row]
 
         if cell.coordinate in excluded_cells or row_dim.hidden:
@@ -100,7 +118,7 @@ def get_worksheet_contents(
         classes = set([cell_height_class])
         vm_id = None if not hasattr(cell, "_vm_id") else getattr(cell, "_vm_id")
 
-        cell_data = {  # initialization of cell_data
+        cell_data: CellRenderData = {  # initialization of cell_data
             "attrs": {"id": get_cell_id(cell)},
             "column": cell.column,
             "row": cell.row,
@@ -111,6 +129,7 @@ def get_worksheet_contents(
             "vm_id": vm_id,
         }
 
+        cell_class_name = ""
         if isinstance(vm_id, str):
             cell_class_name = f"cell_{ws_index}_{col_idx}_{row_i}"
 
@@ -124,7 +143,7 @@ def get_worksheet_contents(
                 ]
             )
 
-            used_vm_ids.append(vm_id)
+            used_vm_ids.add(vm_id)
 
         merged_cell_info = merged_cell_map.get(cell.coordinate, {})
 
@@ -157,12 +176,13 @@ def get_worksheet_contents(
         )
         data_row.append(cell_data)  # Appending current cell_data to array
 
-    columns_dimensions: dict = {}
+    columns_dimensions: dict[str, ColumnRenderData] = {}
 
     def first_row_process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
         nonlocal columns_dimensions
         column_letter = get_column_letter(col_idx + 1)
         columns_dimensions[column_letter] = {
+            "attrs": {},
             "index": column_letter,
             "width": COL_WIDTH__DEFAULT,
             "style": {"visibility": "visible"},
@@ -217,7 +237,7 @@ def get_worksheet_contents(
                     f"App (Contents): Column '{column_letter}' not found for custom dimensions!"
                 )
 
-    col_list = []
+    col_list: list[ColumnRenderData] = []
     table_width = 0
 
     for _, col_details in sorted(
@@ -265,7 +285,7 @@ def get_worksheet_contents(
         }
         vm_cell_vm_ids[class_name] = vm_id
 
-    return {
+    worksheet_contents: WorksheetContents = {
         "rows": data_list,
         "cols": col_list,
         "images": images_to_data(ws),
@@ -274,11 +294,12 @@ def get_worksheet_contents(
         "vm_cell_vm_ids": vm_cell_vm_ids,
         "table_width": table_width,
     }
+    return worksheet_contents
 
 
 def cova_render_table(
-    data,  # , append_headers, append_lineno
-):
+    data: WorksheetContents,  # , append_headers, append_lineno
+) -> str:
     html = [
         "".join(
             [

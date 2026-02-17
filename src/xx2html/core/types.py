@@ -1,4 +1,55 @@
+from collections.abc import Callable
+from typing import TypeAlias, TypedDict
+
 from openpyxl.cell import Cell
+
+
+CellCoordinate: TypeAlias = tuple[int | str, int]
+TransformResult: TypeAlias = tuple[bool, str | None]
+XlsxTransformCallable: TypeAlias = Callable[[str, str, str], TransformResult]
+ConditionalFormattingRelation: TypeAlias = tuple[str, str, set[str]]
+
+
+class ImageRenderData(TypedDict):
+    width: int
+    height: int
+    style: dict[str, str]
+    src: str
+
+
+class CellDimensions(TypedDict):
+    width: int
+    height: int
+
+
+class CellRenderData(TypedDict):
+    attrs: dict[str, object]
+    column: int | str
+    row: int
+    value: object
+    formatted_value: str
+    style: dict[str, str]
+    classes: set[str]
+    vm_id: str | None
+
+
+class ColumnRenderData(TypedDict):
+    attrs: dict[str, object]
+    index: str
+    width: int
+    style: dict[str, str]
+    hidden: bool
+    collapsed: bool
+
+
+class WorksheetContents(TypedDict):
+    rows: list[list[CellRenderData]]
+    cols: list[ColumnRenderData]
+    images: dict[CellCoordinate, list[ImageRenderData]]
+    vm_ids: set[str]
+    vm_ids_dimension_references: dict[str, CellDimensions]
+    vm_cell_vm_ids: dict[str, str]
+    table_width: int
 
 
 class CovaCell(Cell):

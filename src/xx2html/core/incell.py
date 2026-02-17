@@ -4,10 +4,12 @@ from zipfile import ZipFile
 from PIL import Image, UnidentifiedImageError
 from xlsx2html.utils.image import bytes_to_datauri
 
+from xx2html.core.types import CellDimensions
+
 
 def get_incell_css(
     vm_ids: set[str],
-    vm_ids_dimension_references: dict[str, dict[str, int]],
+    vm_ids_dimension_references: dict[str, CellDimensions],
     vm_cell_vm_ids: dict[str, str],
     incell_images_refs: dict[str | None, str],
     archive: ZipFile,
@@ -17,16 +19,16 @@ def get_incell_css(
     image_specs: dict[str, dict[str, object]] = {}
 
     for vm_id in sorted(vm_ids):
-        rId = f"rId{vm_id}"
+        rel_id = f"rId{vm_id}"
 
-        # logging.debug(f"Transform (wb|incell): Working with vm(rId): {rId}")
-        logging.info(f"Transform (wb|incell): Working with vm(rId): {rId}")
-        # if rId in incell_images:
+        # logging.debug(f"Transform (wb|incell): Working with vm(rId): {rel_id}")
+        logging.info(f"Transform (wb|incell): Working with vm(rId): {rel_id}")
+        # if rel_id in incell_images:
         # if vm_id in incell_images_refs:
         target_path = incell_images_refs.get(vm_id, None)
         if target_path is None:
             logging.warning(
-                f"get_incell_css: vm(rId) -> {rId} not found in incell images references!"
+                f"get_incell_css: vm(rId) -> {rel_id} not found in incell images references!"
             )
             continue
         if target_path not in archive_namelist:
@@ -34,8 +36,8 @@ def get_incell_css(
                 f"get_incell_css: vm(rId) -> image '{target_path}' not found in excel file!"
             )
             continue
-        # logging.debug(f"Transform (wb|incell): Reading vm(rId): {rId} -> file at {targetPath}")
-        logging.info(f"get_incell_css: Reading vm(rId): {rId} -> file '{target_path}'")
+        # logging.debug(f"Transform (wb|incell): Reading vm(rId): {rel_id} -> file at {target_path}")
+        logging.info(f"get_incell_css: Reading vm(rId): {rel_id} -> file '{target_path}'")
         with archive.open(target_path) as ifile:
             image_bytes = ifile.read()
 
@@ -48,7 +50,7 @@ def get_incell_css(
         except (UnidentifiedImageError, OSError) as image_exc:
             logging.warning(
                 "get_incell_css: Unable to read image size for vm(rId)=%s (%s): %r",
-                rId,
+                rel_id,
                 target_path,
                 image_exc,
             )

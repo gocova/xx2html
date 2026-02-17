@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 def update_links(
     html: str,
-    encoded_sheet_names: dict,  # sheet names
+    encoded_sheet_names: dict[str, str],  # sheet names
     update_local_links: bool = True,
     update_ext_links: bool = True,
 ) -> str:

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Tuple
+from typing import TypeAlias
 from zipfile import ZipFile
 
 from lxml import etree
@@ -20,6 +20,14 @@ NAMESPACES = {
     "rd": RICHDATA_NS,
 }
 
+VmId: TypeAlias = str
+TargetPath: TypeAlias = str
+RichDataValueIndex: TypeAlias = str
+
+RelationshipTargets: TypeAlias = dict[str, TargetPath]
+RichDataValueTargets: TypeAlias = dict[RichDataValueIndex, TargetPath]
+VmIdToTargetMap: TypeAlias = dict[VmId, TargetPath]
+
 
 def _try_parse_int(value: str | None) -> int | None:
     if value is None:
@@ -32,7 +40,7 @@ def _try_parse_int(value: str | None) -> int | None:
 
 def _get_xml_from_archive(
     archive: ZipFile, file_path: str
-) -> Tuple[etree._Element | None, None | Exception]:
+) -> tuple[etree._Element | None, None | Exception]:
     """
     Reads an XML file from the given archive and returns it as an lxml Element.
     If the file does not exist in the archive, returns None.
@@ -51,7 +59,7 @@ def _get_xml_from_archive(
         return None, exc
 
 
-def _get_relationship_targets(archive: ZipFile) -> Dict[str, str]:
+def _get_relationship_targets(archive: ZipFile) -> RelationshipTargets:
     image_rels = get_dependents(archive, _RICHVALUE_REL_XML_RELS)
     return {rel.Id: rel.Target for rel in image_rels}
 
@@ -69,12 +77,12 @@ def _get_local_image_type_indexes(richvalues_structure_tree: etree._Element) -> 
 def _get_rich_data_value_targets(
     richvalue_tree: etree._Element,
     local_image_type_indexes: set[str],
-    relationship_targets: Dict[str, str],
-) -> Dict[str, str]:
+    relationship_targets: RelationshipTargets,
+) -> RichDataValueTargets:
     """
     Returns a map from rich-data value index (metadata rc@v) to the target image path.
     """
-    rich_data_value_targets: Dict[str, str] = {}
+    rich_data_value_targets: RichDataValueTargets = {}
     for value_index, rich_value_node in enumerate(
         richvalue_tree.xpath("//rd:rv", namespaces=NAMESPACES)
     ):
@@ -99,12 +107,12 @@ def _get_rich_data_value_targets(
 
 
 def _map_vm_ids_to_targets(
-    metadata_tree: etree._Element, rich_data_value_targets: Dict[str, str]
-) -> Dict[str, str]:
+    metadata_tree: etree._Element, rich_data_value_targets: RichDataValueTargets
+) -> VmIdToTargetMap:
     """
     Returns a map from vm_id (worksheet cell vm attr) to target image path.
     """
-    vm_id_to_target: Dict[str, str] = {}
+    vm_id_to_target: VmIdToTargetMap = {}
     for record in metadata_tree.xpath("//x:valueMetadata/x:bk/x:rc", namespaces=NAMESPACES):
         rich_data_value_index = record.get("v")
         if rich_data_value_index is None:
@@ -127,7 +135,9 @@ def _map_vm_ids_to_targets(
     return vm_id_to_target
 
 
-def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], Exception | None]:
+def get_incell_images_refs(
+    archive: ZipFile,
+) -> tuple[VmIdToTargetMap, Exception | None]:
     """
     Extracts in-cell image references from the given archive and returns:
     - vm_id -> target image path

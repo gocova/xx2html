@@ -1,5 +1,3 @@
-from typing import Callable, List, Set, Tuple
-
 import logging
 from zipfile import ZipFile
 
@@ -12,6 +10,11 @@ from xx2html.core.patches.openpyxl import apply_patches
 
 from .incell import get_incell_css
 from .links import update_links
+from .types import (
+    ConditionalFormattingRelation,
+    TransformResult,
+    XlsxTransformCallable,
+)
 from .utils import cova_render_table, get_worksheet_contents
 from .vm import get_incell_images_refs
 
@@ -51,10 +54,10 @@ def create_xlsx_transform(
     # prepare_iframe_noscript: bool = True,
     apply_cf: bool = False,
     fail_ok: bool = True,
-) -> Callable[[str, str, str], Tuple[bool, None | str]]:
+) -> XlsxTransformCallable:
     def transform_xlsx(
         source: str, dest: str, locale: str
-    ) -> Tuple[bool, None | str]:  # -> (bool, None|str):
+    ) -> TransformResult:  # -> (bool, None|str):
         workbook = None
         workbook_archive = None
         try:
@@ -188,7 +191,7 @@ def create_xlsx_transform(
                 logging.info(
                     f"Transform (html|1): Pass 1 --> Preparing {len(conditional_formatting_rule_details)} conditional formatting styles..."
                 )
-                cf_style_relations: List[Tuple[str, str, Set[str]]] = []
+                cf_style_relations: list[ConditionalFormattingRelation] = []
                 if hasattr(workbook, "_differential_styles") and isinstance(
                     workbook._differential_styles,  # type: ignore
                     DifferentialStyleList,
