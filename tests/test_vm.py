@@ -6,7 +6,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from lxml import etree
 
 import xx2html.core.vm as vm_module
-from xx2html.core.vm import get_incell_images_refs, get_xml_from_archive
+from xx2html.core.vm import _get_xml_from_archive, get_incell_images_refs
 
 
 class VmTests(unittest.TestCase):
@@ -89,7 +89,7 @@ class VmTests(unittest.TestCase):
     def test_get_xml_from_archive_handles_missing_file(self):
         zip_buffer = self._build_archive()
         with ZipFile(zip_buffer, mode="r") as zf:
-            root, err = get_xml_from_archive(zf, "does/not/exist.xml")
+            root, err = _get_xml_from_archive(zf, "does/not/exist.xml")
         self.assertIsNone(root)
         self.assertIsInstance(err, KeyError)
 
@@ -99,7 +99,7 @@ class VmTests(unittest.TestCase):
             zf.writestr("broken.xml", "<x>")
         zip_buffer.seek(0)
         with ZipFile(zip_buffer, mode="r") as zf:
-            root, err = get_xml_from_archive(zf, "broken.xml")
+            root, err = _get_xml_from_archive(zf, "broken.xml")
         self.assertIsNone(root)
         self.assertIsInstance(err, etree.XMLSyntaxError)
 
@@ -108,7 +108,7 @@ class VmTests(unittest.TestCase):
             def open(self, *_args, **_kwargs):  # noqa: ANN002, ANN003
                 raise RuntimeError("boom")
 
-        root, err = get_xml_from_archive(BrokenArchive(), "x.xml")  # type: ignore[arg-type]
+        root, err = _get_xml_from_archive(BrokenArchive(), "x.xml")  # type: ignore[arg-type]
         self.assertIsNone(root)
         self.assertIsInstance(err, RuntimeError)
 
@@ -198,7 +198,7 @@ class VmTests(unittest.TestCase):
             metadata_xml=self._valid_metadata_xml(),
         )
         with ZipFile(zip_buffer, mode="r") as zf:
-            with patch("xx2html.core.vm.get_xml_from_archive", return_value=(None, None)):
+            with patch("xx2html.core.vm._get_xml_from_archive", return_value=(None, None)):
                 refs, err = get_incell_images_refs(zf)
         self.assertEqual({}, refs)
         self.assertIsInstance(err, RuntimeError)
@@ -214,7 +214,7 @@ class VmTests(unittest.TestCase):
         )
         with ZipFile(zip_buffer, mode="r") as zf:
             with patch(
-                "xx2html.core.vm.get_xml_from_archive",
+                "xx2html.core.vm._get_xml_from_archive",
                 side_effect=[(structure_tree, None), (None, None)],
             ):
                 refs, err = get_incell_images_refs(zf)
@@ -233,7 +233,7 @@ class VmTests(unittest.TestCase):
         )
         with ZipFile(zip_buffer, mode="r") as zf:
             with patch(
-                "xx2html.core.vm.get_xml_from_archive",
+                "xx2html.core.vm._get_xml_from_archive",
                 side_effect=[(structure_tree, None), (richvalue_tree, None), (None, None)],
             ):
                 refs, err = get_incell_images_refs(zf)

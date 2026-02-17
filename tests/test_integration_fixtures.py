@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from xx2html import get_xlsx_transform
+from xx2html import create_xlsx_transform
 
 FIXTURES_DIR = Path(__file__).resolve().parent / "fixtures"
 
@@ -21,7 +21,7 @@ INDEX_HTML = (
 
 
 def _render_fixture(source_file: Path, apply_cf: bool) -> str:
-    transform = get_xlsx_transform(
+    transform = create_xlsx_transform(
         sheet_html=SHEET_HTML,
         sheetname_html=SHEETNAME_HTML,
         index_html=INDEX_HTML,

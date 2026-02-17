@@ -97,7 +97,7 @@ def cova_parse_cell(self, element):
     }
 
 
-def cova__bind_cells(self):
+def cova_bind_cells(self):
     """
     Bind CovaCells to the worksheet.
 
@@ -128,4 +128,4 @@ def cova__bind_cells(self):
 
 def apply_patches():
     WorkSheetParser.parse_cell = cova_parse_cell
-    WorksheetReader.bind_cells = cova__bind_cells
+    WorksheetReader.bind_cells = cova_bind_cells

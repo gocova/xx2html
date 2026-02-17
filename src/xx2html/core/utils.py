@@ -159,7 +159,7 @@ def get_worksheet_contents(
 
     columns_dimensions: dict = {}
 
-    def first_row__process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
+    def first_row_process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
         nonlocal columns_dimensions
         column_letter = get_column_letter(col_idx + 1)
         columns_dimensions[column_letter] = {
@@ -171,7 +171,7 @@ def get_worksheet_contents(
         }
         process_cell(col_idx, cell)
 
-    current_process_cell = first_row__process_cell
+    current_process_cell = first_row_process_cell
 
     data_list = []
     for row_i, row in enumerate(ws.iter_rows()):
@@ -276,7 +276,7 @@ def get_worksheet_contents(
     }
 
 
-def cova__render_table(
+def cova_render_table(
     data,  # , append_headers, append_lineno
 ):
     html = [

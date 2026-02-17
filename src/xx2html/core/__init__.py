@@ -12,7 +12,7 @@ from xx2html.core.patches.openpyxl import apply_patches
 
 from .incell import get_incell_css
 from .links import update_links
-from .utils import cova__render_table, get_worksheet_contents
+from .utils import cova_render_table, get_worksheet_contents
 from .vm import get_incell_images_refs
 
 # from .css import CssRegistry, create_get_css_components_from_cell
@@ -39,7 +39,7 @@ def apply_openpyxl_patches() -> None:
 apply_openpyxl_patches()
 
 
-def get_xlsx_transform(
+def create_xlsx_transform(
     sheet_html: str,
     sheetname_html: str,
     index_html: str,
@@ -52,23 +52,23 @@ def get_xlsx_transform(
     apply_cf: bool = False,
     fail_ok: bool = True,
 ) -> Callable[[str, str, str], Tuple[bool, None | str]]:
-    def xlsx_transform(
+    def transform_xlsx(
         source: str, dest: str, locale: str
     ) -> Tuple[bool, None | str]:  # -> (bool, None|str):
-        wb = None
-        archive = None
+        workbook = None
+        workbook_archive = None
         try:
             logging.info(f"Transform (out): Opening '{dest}' for writing...")
             with open(dest, "w", encoding="utf-8") as output:
-                links = []
-                html_tables = []
+                sheet_navigation_links = []
+                sheet_html_sections = []
 
                 logging.info(f"Transform (wb): Reading '{source}' as xlsx file...")
-                wb = load_workbook(source, data_only=True, rich_text=True)
+                workbook = load_workbook(source, data_only=True, rich_text=True)
 
                 logging.debug("Transform (wb|css): Reading theme colors...")
-                theme_aRGBs_list = get_theme_colors(wb)
-                pre_get_css_color = create_themed_css_color_resolver(theme_aRGBs_list)
+                theme_argb_palette = get_theme_colors(workbook)
+                pre_get_css_color = create_themed_css_color_resolver(theme_argb_palette)
 
                 def get_css_color(color):
                     argb_color = pre_get_css_color(color)
@@ -90,52 +90,54 @@ def get_xlsx_transform(
                 logging.debug("Transform (wb|incell): Reading incell images...")
                 incell_images_refs = {}
                 try:
-                    archive = ZipFile(source, "r")
-                    incell_images_refs, err = get_incell_images_refs(archive)
-                    if err is not None:
-                        raise err
+                    workbook_archive = ZipFile(source, "r")
+                    incell_images_refs, incell_error = get_incell_images_refs(
+                        workbook_archive
+                    )
+                    if incell_error is not None:
+                        raise incell_error
                     logging.info("Transform (wb|incell): Reading complete!")
                 except Exception as incell_exc:
                     logging.warning(
                         "Transform (wb|incell): Unable to read incell images due to: %r",
                         incell_exc,
                     )
-                    if archive is not None:
-                        archive.close()
-                        archive = None
+                    if workbook_archive is not None:
+                        workbook_archive.close()
+                        workbook_archive = None
 
                 vm_ids = set()
                 vm_ids_dimension_references = dict()
                 vm_cell_vm_ids = dict()
 
-                enc_names = dict()
-                sheets_names = wb.sheetnames
-                effective_cf_rules_details = {}  # all conditional formatting rules
+                encoded_sheet_names = dict()
+                sheet_names = workbook.sheetnames
+                conditional_formatting_rule_details = {}
 
-                for sheet_name in sheets_names:
-                    ws = wb[sheet_name]
+                for sheet_name in sheet_names:
+                    worksheet = workbook[sheet_name]
 
-                    ws_index = wb.index(ws)
-                    enc_sheet_name = f"sheet_{hex(ws_index)[2:].zfill(3)}"
+                    worksheet_index = workbook.index(worksheet)
+                    encoded_sheet_name = f"sheet_{hex(worksheet_index)[2:].zfill(3)}"
 
-                    enc_names[sheet_name] = enc_sheet_name
+                    encoded_sheet_names[sheet_name] = encoded_sheet_name
 
-                    if ws.sheet_state == "visible":
+                    if worksheet.sheet_state == "visible":
                         logging.info(
-                            f"Application (ws): Sheet[{ws_index}]:'{sheet_name}' (enc_sheet_name: {enc_sheet_name}) -> is visible"
+                            f"Application (ws): Sheet[{worksheet_index}]:'{sheet_name}' (enc_sheet_name: {encoded_sheet_name}) -> is visible"
                         )
 
                         contents = get_worksheet_contents(
-                            ws,
+                            worksheet,
                             css_rules_registry=css_registry,
                             css_builder=css_builder,
                             get_css_from_cell=get_css_from_cell,
                             locale=locale,
-                            ws_index=ws_index,
+                            ws_index=worksheet_index,
                         )
 
                         logging.info(
-                            f" {enc_sheet_name} --> vm_ids: {contents['vm_ids']}"
+                            f" {encoded_sheet_name} --> vm_ids: {contents['vm_ids']}"
                         )
                         vm_ids.update(contents["vm_ids"])
                         vm_ids_dimension_references.update(
@@ -143,17 +145,17 @@ def get_xlsx_transform(
                         )
                         vm_cell_vm_ids.update(contents["vm_cell_vm_ids"])
 
-                        html_tables.append(
+                        sheet_html_sections.append(
                             sheet_html.format(
-                                enc_sheet_name=enc_sheet_name,
+                                enc_sheet_name=encoded_sheet_name,
                                 sheet_name=sheet_name,
-                                table_generated_html=cova__render_table(contents),
+                                table_generated_html=cova_render_table(contents),
                             )
                         )
 
-                        links.append(
+                        sheet_navigation_links.append(
                             sheetname_html.format(
-                                enc_sheet_name=enc_sheet_name, sheet_name=sheet_name
+                                enc_sheet_name=encoded_sheet_name, sheet_name=sheet_name
                             )
                         )
 
@@ -161,13 +163,15 @@ def get_xlsx_transform(
                             logging.info(
                                 f"Application (wb|cf): Processing conditional formatting for '{sheet_name}'"
                             )
-                            effective_cf_rules_details.update(
-                                process_conditional_formatting(ws, fail_ok=fail_ok)
+                            conditional_formatting_rule_details.update(
+                                process_conditional_formatting(
+                                    worksheet, fail_ok=fail_ok
+                                )
                             )
 
                 generated_css = "\n".join(css_registry.get_rules())
 
-                if archive is not None:
+                if workbook_archive is not None:
                     logging.debug(
                         "Transform (wb|incell): Preparing incell images output..."
                     )
@@ -176,36 +180,36 @@ def get_xlsx_transform(
                         vm_ids_dimension_references,
                         vm_cell_vm_ids,
                         incell_images_refs,
-                        archive,
+                        workbook_archive,
                     )
                 else:
                     generated_incell_css = ""
 
                 logging.info(
-                    f"Transform (html|1): Pass 1 --> Preparing {len(effective_cf_rules_details)} conditional formatting styles..."
+                    f"Transform (html|1): Pass 1 --> Preparing {len(conditional_formatting_rule_details)} conditional formatting styles..."
                 )
-                cf_styles_rels: List[Tuple[str, str, Set[str]]] = []
-                if hasattr(wb, "_differential_styles") and isinstance(
-                    wb._differential_styles,  # type: ignore
+                cf_style_relations: List[Tuple[str, str, Set[str]]] = []
+                if hasattr(workbook, "_differential_styles") and isinstance(
+                    workbook._differential_styles,  # type: ignore
                     DifferentialStyleList,
                 ):
-                    for _, details in effective_cf_rules_details.items():
+                    for _, details in conditional_formatting_rule_details.items():
                         sheet_name, cell_ref, _, dxf_id, _ = details
                         class_names = get_cf_css_from_diff(
-                            wb._differential_styles[dxf_id],  # type: ignore
+                            workbook._differential_styles[dxf_id],  # type: ignore
                             is_important=True,
                         )
-                        cf_styles_rels.append((sheet_name, cell_ref, class_names))
+                        cf_style_relations.append((sheet_name, cell_ref, class_names))
                 logging.debug(
-                    f"Transform: Resulting conditional formatting styles: {cf_styles_rels}"
+                    f"Transform: Resulting conditional formatting styles: {cf_style_relations}"
                 )
 
                 logging.info("Transform (html|2): Pass 2 --> Preparing html")
                 css_rules = "\n".join(css_cf_registry.get_rules())
                 html = (
                     index_html.format(
-                        sheets_generated_html="\n".join(html_tables),
-                        sheets_names_generated_html="\n".join(links),
+                        sheets_generated_html="\n".join(sheet_html_sections),
+                        sheets_names_generated_html="\n".join(sheet_navigation_links),
                         source_filename=source,
                         fonts_html=fonts_html,
                         core_css_html=f"<style>{core_css}</style>",
@@ -220,17 +224,19 @@ def get_xlsx_transform(
                 )
 
                 logging.info("Transform (html|3): Pass 3 --> Updating links...")
-                html_2 = update_links(
-                    html, enc_names, update_local_links=update_local_links
+                html_with_updated_links = update_links(
+                    html, encoded_sheet_names, update_local_links=update_local_links
                 )
 
                 logging.info(
                     "Transform (html|4): Pass 4 --> Applying conditional formatting styles..."
                 )
-                html_3 = apply_cf_styles(html_2, cf_styles_rels)
+                html_with_cf_styles = apply_cf_styles(
+                    html_with_updated_links, cf_style_relations
+                )
 
                 logging.info(f"Transform (out): Writing output: {dest}")
-                output.write(html_3)
+                output.write(html_with_cf_styles)
 
             logging.info("Transform: Done!")
             return (True, None)
@@ -238,11 +244,11 @@ def get_xlsx_transform(
             logging.exception("Transform failed for '%s' -> '%s'", source, dest)
             return (False, repr(exc))
         finally:
-            if archive is not None:
+            if workbook_archive is not None:
                 logging.info("Transform (wb|incell): Closing archive...")
-                archive.close()
-            if wb is not None:
+                workbook_archive.close()
+            if workbook is not None:
                 logging.info(f"Transform (wb): Closing wb: {source}")
-                wb.close()
+                workbook.close()
 
-    return xlsx_transform
+    return transform_xlsx

@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 def update_links(
     html: str,
-    enc_names: dict,  # sheet names
+    encoded_sheet_names: dict,  # sheet names
     update_local_links: bool = True,
     update_ext_links: bool = True,
 ) -> str:
@@ -23,7 +23,7 @@ def update_links(
         if is_local_anchor:
             if update_local_links:
                 sheet_name = href.split(".")[0].replace("#", "")
-                enc_sheet_name = enc_names.get(sheet_name)
+                enc_sheet_name = encoded_sheet_names.get(sheet_name)
                 # sheet_name = ''.join(e for e in possible_sheet_name if e.isalnum())
 
                 # final_href = f'#sheet-{sheet_name}' if sheet_name in usable_names else ''

@@ -30,7 +30,7 @@ def _try_parse_int(value: str | None) -> int | None:
         return None
 
 
-def get_xml_from_archive(
+def _get_xml_from_archive(
     archive: ZipFile, file_path: str
 ) -> Tuple[etree._Element | None, None | Exception]:
     """
@@ -150,16 +150,16 @@ def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], Exception 
             "get_incell_images_refs: relationship_targets -> %s", relationship_targets
         )
 
-        richvalues_structure_tree, err = get_xml_from_archive(
+        richvalues_structure_tree, xml_error = _get_xml_from_archive(
             archive, _RICHVALUES_STRUCTURE_XML
         )
-        if err is not None or richvalues_structure_tree is None:
-            return {}, err or RuntimeError("Failed to read rich value structure XML.")
+        if xml_error is not None or richvalues_structure_tree is None:
+            return {}, xml_error or RuntimeError("Failed to read rich value structure XML.")
         local_image_type_indexes = _get_local_image_type_indexes(richvalues_structure_tree)
 
-        richvalue_tree, err = get_xml_from_archive(archive, _RICHVALUE_XML)
-        if err is not None or richvalue_tree is None:
-            return {}, err or RuntimeError("Failed to read rich value XML.")
+        richvalue_tree, xml_error = _get_xml_from_archive(archive, _RICHVALUE_XML)
+        if xml_error is not None or richvalue_tree is None:
+            return {}, xml_error or RuntimeError("Failed to read rich value XML.")
         rich_data_value_targets = _get_rich_data_value_targets(
             richvalue_tree, local_image_type_indexes, relationship_targets
         )
@@ -168,9 +168,9 @@ def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], Exception 
             rich_data_value_targets,
         )
 
-        metadata_tree, err = get_xml_from_archive(archive, _METADATA_XML)
-        if err is not None or metadata_tree is None:
-            return {}, err or RuntimeError("Failed to read metadata XML.")
+        metadata_tree, xml_error = _get_xml_from_archive(archive, _METADATA_XML)
+        if xml_error is not None or metadata_tree is None:
+            return {}, xml_error or RuntimeError("Failed to read metadata XML.")
         vm_id_to_target = _map_vm_ids_to_targets(metadata_tree, rich_data_value_targets)
         logging.info("get_incell_images_refs: vm_id_to_target -> %s", vm_id_to_target)
 

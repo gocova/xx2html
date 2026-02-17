@@ -19,12 +19,12 @@ pip install xx2html
 ## Usage
 
 ```python
-from xx2html import apply_openpyxl_patches, get_xlsx_transform
+from xx2html import apply_openpyxl_patches, create_xlsx_transform
 
 # Explicit entrypoint. Patches are also applied automatically on import.
 apply_openpyxl_patches()
 
-transform = get_xlsx_transform(
+transform = create_xlsx_transform(
     sheet_html=(
         '<section id="{enc_sheet_name}" data-sheet-name="{sheet_name}">'
         "{table_generated_html}"
