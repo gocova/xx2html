@@ -1,3 +1,5 @@
+"""Rewrite worksheet and external links in generated HTML."""
+
 from copy import deepcopy
 from bs4 import BeautifulSoup
 
@@ -8,6 +10,7 @@ def update_links(
     update_local_links: bool = True,
     update_ext_links: bool = True,
 ) -> str:
+    """Rewrite anchor tags for worksheet-local and external navigation."""
     soup = BeautifulSoup(html, "lxml")
 
     for anchor_tag in soup.find_all("a"):

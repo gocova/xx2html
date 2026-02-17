@@ -1,5 +1,7 @@
 # Copyright (c) 2024-2026 gonzalo covarrubias <gocova.dev+xx2html@gmail.com>
 
+"""Monkey patches required to expose rich-value metadata in openpyxl cells."""
+
 # Monkey patch for: WorkSheetParser
 from openpyxl.worksheet._reader import WorkSheetParser
 
@@ -127,5 +129,6 @@ def cova_bind_cells(self) -> None:
 
 
 def apply_patches() -> None:
+    """Install parser/reader monkey patches used by `xx2html`."""
     WorkSheetParser.parse_cell = cova_parse_cell
     WorksheetReader.bind_cells = cova_bind_cells

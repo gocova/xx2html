@@ -50,6 +50,25 @@ if not ok:
     raise RuntimeError(err)
 ```
 
+## API Map
+
+Public API (`xx2html`):
+
+- `apply_openpyxl_patches() -> None`
+  - Applies required openpyxl monkey patches (idempotent).
+- `create_xlsx_transform(...) -> Callable[[str, str, str], tuple[bool, str | None]]`
+  - Returns a transformer callable with signature `(source_xlsx, dest_html, locale)`.
+  - Returns `(True, None)` on success, `(False, "<error repr>")` on failure.
+
+Core helpers (`xx2html.core`, useful for advanced integrations):
+
+- `get_worksheet_contents(...) -> WorksheetContents`
+- `cova_render_table(worksheet_contents) -> str`
+- `get_incell_images_refs(archive) -> tuple[dict[str, str], Exception | None]`
+- `get_incell_css(...) -> str`
+- `apply_cf_styles(html, cf_style_relations) -> str`
+- `update_links(html, encoded_sheet_names, ...) -> str`
+
 ## Template Placeholders
 
 `sheet_html` requires:

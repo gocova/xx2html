@@ -1,3 +1,5 @@
+"""Conditional-formatting HTML post-processing."""
+
 import logging
 from bs4 import BeautifulSoup
 
@@ -7,6 +9,7 @@ from xx2html.core.types import ConditionalFormattingRelation
 def apply_cf_styles(
     html: str, cf_style_relations: list[ConditionalFormattingRelation]
 ) -> str:
+    """Attach generated conditional-formatting class names to target cells."""
     soup = BeautifulSoup(html, "lxml")
     for sheet_name, cell_ref, class_names in cf_style_relations:
         class_names_str = " ".join(class_names)

@@ -11,6 +11,7 @@ def initialize(
     default_config: dict,
     system_config: dict,
 ):
+    """Load app config from disk, merge defaults/system values, and return it."""
     logging.info("Application: Initializing...")
 
     logging.info(f"Application: Using config path |> {app_config_path}")

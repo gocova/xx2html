@@ -1,3 +1,5 @@
+"""Extract vm-id to media target mappings from XLSX rich-data parts."""
+
 import logging
 from typing import TypeAlias
 from zipfile import ZipFile
@@ -30,6 +32,7 @@ VmIdToTargetMap: TypeAlias = dict[VmId, TargetPath]
 
 
 def _try_parse_int(value: str | None) -> int | None:
+    """Parse `value` as int, returning `None` when parsing fails."""
     if value is None:
         return None
     try:
@@ -60,11 +63,13 @@ def _get_xml_from_archive(
 
 
 def _get_relationship_targets(archive: ZipFile) -> RelationshipTargets:
+    """Read relationship ids (`rId*`) and target paths for rich data."""
     image_rels = get_dependents(archive, _RICHVALUE_REL_XML_RELS)
     return {rel.Id: rel.Target for rel in image_rels}
 
 
 def _get_local_image_type_indexes(richvalues_structure_tree: etree._Element) -> set[str]:
+    """Collect rich-data structure indexes that represent local images."""
     local_image_type_indexes = set()
     for index, structure_node in enumerate(
         richvalues_structure_tree.xpath("//rd:s", namespaces=NAMESPACES)

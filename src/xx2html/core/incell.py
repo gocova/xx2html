@@ -1,3 +1,5 @@
+"""Generate CSS rules for Excel in-cell rich-value images."""
+
 from io import BytesIO
 import logging
 from zipfile import ZipFile
@@ -14,6 +16,7 @@ def get_incell_css(
     incell_images_refs: dict[str | None, str],
     archive: ZipFile,
 ) -> str:
+    """Create per-vm and per-cell CSS rules for in-cell image rendering."""
     styles = []
     archive_namelist = archive.namelist()
     image_specs: dict[str, dict[str, object]] = {}

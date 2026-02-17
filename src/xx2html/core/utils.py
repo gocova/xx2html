@@ -1,3 +1,5 @@
+"""Worksheet-to-HTML table helpers."""
+
 from collections.abc import Callable
 from typing import TypedDict
 
@@ -42,6 +44,12 @@ def get_worksheet_contents(
     locale: None | str = None,
     ws_index: int = -1,
 ) -> WorksheetContents:
+    """Extract normalized render data for one worksheet.
+
+    Returns a typed payload containing rows, columns, image metadata, and
+    in-cell rich-value references required by HTML rendering.
+    """
+
     class VmCellLayoutEntry(TypedDict):
         class_name: str
         vm_id: str
@@ -300,6 +308,7 @@ def get_worksheet_contents(
 def cova_render_table(
     data: WorksheetContents,  # , append_headers, append_lineno
 ) -> str:
+    """Render worksheet contents into a single `<table>` HTML string."""
     html = [
         "".join(
             [

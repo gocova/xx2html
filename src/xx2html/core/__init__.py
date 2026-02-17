@@ -1,3 +1,5 @@
+"""Core transformation API for converting XLSX workbooks to HTML."""
+
 import logging
 from zipfile import ZipFile
 
@@ -55,9 +57,16 @@ def create_xlsx_transform(
     apply_cf: bool = False,
     fail_ok: bool = True,
 ) -> XlsxTransformCallable:
+    """Build and return a configured XLSX-to-HTML transform function.
+
+    The returned callable takes `(source, dest, locale)` and writes a complete
+    HTML document to `dest`.
+    """
+
     def transform_xlsx(
         source: str, dest: str, locale: str
-    ) -> TransformResult:  # -> (bool, None|str):
+    ) -> TransformResult:
+        """Transform one XLSX file into one HTML file."""
         workbook = None
         workbook_archive = None
         try:

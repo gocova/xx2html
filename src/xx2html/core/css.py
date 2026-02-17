@@ -28,6 +28,8 @@ BORDER_STYLES = {
 
 
 class CssRegistry:
+    """Register reusable CSS class names generated from cell style fragments."""
+
     def __init__(
         self,
         get_css_color: Callable[[Color], str | None],
@@ -120,6 +122,7 @@ class CssRegistry:
 
 
 def get_border_classes_from_cell(cell: Cell | CovaCell, css_registry: CssRegistry):
+    """Return CSS border classes required to render a cell border."""
     classes = set()
 
     for b_dir in ["right", "left", "top", "bottom"]:
@@ -139,10 +142,13 @@ def get_border_classes_from_cell(cell: Cell | CovaCell, css_registry: CssRegistr
 
 
 def create_get_css_components_from_cell(css_registry: CssRegistry):
+    """Build a function that extracts inline styles and class names from a cell."""
+
     def get_css_components_from_cell(
         cell: Cell | CovaCell,
         merged_cell_map=None,  # odefault_cell_border="none"
     ) -> Tuple[dict, set]:
+        """Return `(styles, classes)` for a single cell (including merged edges)."""
         merged_cell_map = merged_cell_map or {}
 
         classes = set()

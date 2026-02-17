@@ -1,3 +1,5 @@
+"""Shared type aliases and typed payload models used in core transforms."""
+
 from collections.abc import Callable
 from typing import TypeAlias, TypedDict
 
@@ -11,6 +13,8 @@ ConditionalFormattingRelation: TypeAlias = tuple[str, str, set[str]]
 
 
 class ImageRenderData(TypedDict):
+    """Image payload used while rendering worksheet cell attachments."""
+
     width: int
     height: int
     style: dict[str, str]
@@ -18,11 +22,15 @@ class ImageRenderData(TypedDict):
 
 
 class CellDimensions(TypedDict):
+    """Pixel dimensions for a rendered cell box."""
+
     width: int
     height: int
 
 
 class CellRenderData(TypedDict):
+    """Normalized render model for one `<td>` element."""
+
     attrs: dict[str, object]
     column: int | str
     row: int
@@ -34,6 +42,8 @@ class CellRenderData(TypedDict):
 
 
 class ColumnRenderData(TypedDict):
+    """Normalized render model for one `<col>` element."""
+
     attrs: dict[str, object]
     index: str
     width: int
@@ -43,6 +53,8 @@ class ColumnRenderData(TypedDict):
 
 
 class WorksheetContents(TypedDict):
+    """Aggregate render payload for one worksheet table."""
+
     rows: list[list[CellRenderData]]
     cols: list[ColumnRenderData]
     images: dict[CellCoordinate, list[ImageRenderData]]
@@ -53,6 +65,8 @@ class WorksheetContents(TypedDict):
 
 
 class CovaCell(Cell):
+    """Openpyxl cell extension that stores rich-value metadata (`vm_id`)."""
+
     _vm_id = None
 
     def __init__(
