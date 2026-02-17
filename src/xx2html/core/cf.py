@@ -10,7 +10,7 @@ def apply_cf_styles(html: str, cf_styles_rels: List[Tuple[str, str, Set[str]]]) 
         logging.debug(
             f"apply_cf_styles: '{sheet_name}!{cell_ref}' with additional class_names: {class_names_str}"
         )
-        for td_tag in soup.findAll("td", id=f"{sheet_name}!{cell_ref}"):
+        for td_tag in soup.find_all("td", id=f"{sheet_name}!{cell_ref}"):
             # print(" ".join(class_names))
             prev_classes = td_tag.get("class")
             prev_classes: List[str] = prev_classes if prev_classes is not None else []

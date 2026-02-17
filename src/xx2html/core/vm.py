@@ -15,7 +15,7 @@ RICHDATA_NS = "http://schemas.microsoft.com/office/spreadsheetml/2017/richdata"
 
 EXPECTED_RICHDATA_IMAGE_TYPES= ["_localImage"]
 
-def get_xml_from_archive(archive: ZipFile, file_path: str) -> Tuple[etree._Element | None, None | RuntimeError]:
+def get_xml_from_archive(archive: ZipFile, file_path: str) -> Tuple[etree._Element | None, None | Exception]:
     """
     Reads an XML file from the given archive and returns it as an lxml Element.
     If the file does not exist in the archive, returns None.
@@ -58,7 +58,7 @@ namespaces = {
     'xalc': 'http://schemas.microsoft.com/office/spreadsheetml/2019/calcfeatures',
 }
 
-def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], RuntimeError | None]:
+def get_incell_images_refs(archive: ZipFile) -> Tuple[Dict[str, str], Exception | None]:
     """
     Extracts incell images from the given archive and returns a dictionary
     mapping image references to their content.

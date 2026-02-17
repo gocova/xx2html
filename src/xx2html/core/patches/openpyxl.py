@@ -1,4 +1,4 @@
-# Copyright (c) 2024-2025 gonzalo covarrubias <gocova.dev@gmail.com>
+# Copyright (c) 2024-2026 gonzalo covarrubias <gocova.dev+xx2html@gmail.com>
 
 # Monkey patch for: WorkSheetParser
 from openpyxl.worksheet._reader import WorkSheetParser
@@ -8,20 +8,25 @@ from openpyxl.worksheet._reader import WorksheetReader
 
 ## required imports
 from warnings import warn
+from openpyxl.utils import coordinate_to_tuple
+from openpyxl.utils.datetime import from_excel, from_ISO8601
 from openpyxl.worksheet._reader import (
-    coordinate_to_tuple,
-    _cast_number,
-    from_excel,
-    from_ISO8601,
     parse_richtext_string,
+    VALUE_TAG, FORMULA_TAG, INLINE_STRING,
+    _cast_number, # type: ignore
 )
-from openpyxl.worksheet._reader import VALUE_TAG, FORMULA_TAG, INLINE_STRING
 from openpyxl.cell.text import Text
 
 from xx2html.core.types import CovaCell
 
 
 def cova_parse_cell(self, element):
+    """
+    Parse a cell element into a dictionary containing the cell's row, column, value, data type, style id, and vm id.
+
+    :param element: The cell element to parse
+    :return: A dictionary containing the cell's row, column, value, data type, style id, and vm id
+    """
     data_type = element.get("t", "n")
     coordinate = element.get("r")
     style_id = element.get("s", 0)
@@ -79,7 +84,8 @@ def cova_parse_cell(self, element):
             if self.rich_text:
                 value = parse_richtext_string(child)
             else:
-                value = Text.from_tree(child).content
+                text_child = Text.from_tree(child)
+                value = text_child.content if text_child else ""
 
     return {
         "row": row,
@@ -91,11 +97,15 @@ def cova_parse_cell(self, element):
     }
 
 
-# WorkSheetParser.parse_cell = cova_parse_cell
-
-
-
 def cova__bind_cells(self):
+    """
+    Bind CovaCells to the worksheet.
+
+    This method is used to process the parsed data and bind it to the worksheet.
+    It creates a CovaCell for each cell in the parsed data and sets the value and data_type.
+    The CovaCells are then stored in the worksheet's _cells dictionary.
+
+    """
     for idx, row in self.parser.parse():
         for cell in row:
             style = self.ws.parent._cell_styles[cell["style_id"]]
@@ -114,8 +124,6 @@ def cova__bind_cells(self):
     if self.ws._cells:
         self.ws._current_row = self.ws.max_row  # use cells not row dimensions
 
-
-# WorksheetReader.bind_cells = cova__bind_cells
 
 
 def apply_patches():

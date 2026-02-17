@@ -3,7 +3,7 @@ from openpyxl.cell import Cell
 from openpyxl.styles.colors import Color
 
 from xx2html.core.types import CovaCell
-from condif2css.color import aRGB_to_css
+from condif2css.color import argb_to_css
 
 import logging
 
@@ -31,10 +31,10 @@ class CssRegistry:
     def __init__(
         self,
         get_css_color: Callable[[Color], str | None],
-        classes: dict[str, object] = dict(),
+        classes: dict[str, object] | None = None,
     ) -> None:
         self.get_css_color = get_css_color
-        self.classes = classes
+        self.classes = {} if classes is None else classes
 
     def register_font_size(self, size: int) -> str:
         class_name = f"xlsx_cell_font_size_{size}"
@@ -54,7 +54,7 @@ class CssRegistry:
             class_name = f"xlsx_cell_font_color_{aRGB}"
 
             if class_name not in self.classes:
-                self.classes[class_name] = f"color: {aRGB_to_css(aRGB)};"
+                self.classes[class_name] = f"color: {argb_to_css(aRGB)};"
             return class_name
         else:
             return None
@@ -65,7 +65,7 @@ class CssRegistry:
             class_name = f"xlsx_cell_background_color_{aRGB}"
 
             if class_name not in self.classes:
-                self.classes[class_name] = f"background-color : {aRGB_to_css(aRGB)}"
+                self.classes[class_name] = f"background-color : {argb_to_css(aRGB)}"
 
             return class_name
         else:
@@ -74,7 +74,7 @@ class CssRegistry:
     def register_font_underline(self) -> str:
         class_name = "xlsx_cell_font_underline"
         if class_name not in self.classes:
-            self.classes[class_name] = "font-decoration: underline;"
+            self.classes[class_name] = "text-decoration: underline;"
         return class_name
 
     def register_font_bold(self) -> str:
@@ -110,7 +110,7 @@ class CssRegistry:
         if aRGB is not None:
             class_name = f"{class_name}_{aRGB}"
             class_value = (
-                f"{class_value} border-{direction}-color: {aRGB_to_css(aRGB)};"
+                f"{class_value} border-{direction}-color: {argb_to_css(aRGB)};"
             )
 
         if class_name not in self.classes:

@@ -1,3 +1,4 @@
+from copy import deepcopy
 from bs4 import BeautifulSoup
 
 
@@ -9,12 +10,13 @@ def update_links(
 ) -> str:
     soup = BeautifulSoup(html, "lxml")
 
-    for anchor_tag in soup.findAll("a"):
+    for anchor_tag in soup.find_all("a"):
         if "class" in anchor_tag.attrs and "xlsx_sheet-link" in anchor_tag["class"]:
             continue
 
-        is_local_anchor = False
-        href = anchor_tag["href"]
+        href = anchor_tag.get("href")
+        if not isinstance(href, str) or href == "":
+            continue
 
         is_local_anchor = href.startswith("#")
 
@@ -44,8 +46,9 @@ def update_links(
                     },
                 )
 
-                sharepoint_anchor_tag.string = anchor_tag.string
-                js_anchor_tag.string = anchor_tag.string
+                for child in anchor_tag.contents:
+                    sharepoint_anchor_tag.append(deepcopy(child))
+                    js_anchor_tag.append(deepcopy(child))
 
                 # print(f"sharepoint: {sharepoint_anchor_tag}")
                 # print(f"js: {js_anchor_tag}")
@@ -59,8 +62,10 @@ def update_links(
                         "href": href,
                         "class": "xlsx_sheet-link js_visible",
                         "target": "_blank",
+                        "rel": "noopener noreferrer",
                     },
                 )
-                external_anchor_tag.string = anchor_tag.string
+                for child in anchor_tag.contents:
+                    external_anchor_tag.append(deepcopy(child))
                 anchor_tag.replace_with(external_anchor_tag)
-    return soup.prettify()
+    return str(soup)

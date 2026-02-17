@@ -240,7 +240,7 @@ def cova__render_table(
         "".join(
             [
                 "<table  ",
-                f'style="border:0; border-collapse: collapse; width: {data['table_width']}px; table-layout: fixed;" '
+                f'style="border:0; border-collapse: collapse; width: {data["table_width"]}px; table-layout: fixed;" '
                 if "table_width" in data
                 else 'style="border-collapse: collapse; table-layout: fixed;" ',
                 " >",
