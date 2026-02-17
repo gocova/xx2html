@@ -1,4 +1,4 @@
-from typing import Set, Tuple, Callable
+from typing import Callable, Set
 
 from condif2css.css import CssBuilder, CssRulesRegistry
 from openpyxl.utils import get_column_letter
@@ -37,8 +37,9 @@ def get_worksheet_contents(
 ):
     merged_cell_map = {}
     used_vm_ids = []
-    vm_ids_dimension_references = dict()
-    vm_ids_heights = dict()
+    vm_ids_dimension_references = {}
+    vm_cell_vm_ids = {}
+    vm_cells_layout = []
 
     merged_cell_ranges = [cell_range.coord for cell_range in ws.merged_cells.ranges]
     excluded_cells = set(
@@ -70,17 +71,21 @@ def get_worksheet_contents(
 
         excluded_cells.remove(m_cell.coordinate)
 
+    def get_effective_row_height(row_number: int) -> int:
+        row_dim = ws.row_dimensions[row_number]
+        if row_dim.hidden:
+            return 0
+        if row_dim.customHeight and isinstance(row_dim.height, (int, float)):
+            return int(round(row_dim.height, 2))
+        return CELL_HEIGHT__DEFAULT
+
     def process_cell(col_idx: int, cell: Cell | CovaCell | MergedCell) -> None:
         row_dim = ws.row_dimensions[cell.row]
 
         if cell.coordinate in excluded_cells or row_dim.hidden:
             return
 
-        height = (
-            CELL_HEIGHT__DEFAULT
-            if not row_dim.customHeight
-            else int(round(row_dim.height, 2))
-        )
+        height = get_effective_row_height(cell.row)
 
         f_cell = None
 
@@ -110,31 +115,36 @@ def get_worksheet_contents(
             cell_class_name = f"cell_{ws_index}_{col_idx}_{row_i}"
 
             cell_data.update({"formatted_value": ""})
-            cell_data["style"].update({"position": "relative"})
+            cell_data["style"].update({"position": "relative", "overflow": "hidden"})
             cell_data["classes"].update(
                 [
                     f"vm-richvaluerel_rid{vm_id}",
                     cell_class_name,
-                    "incell-image"
+                    "incell-image",
                 ]
             )
 
             used_vm_ids.append(vm_id)
-
-            curr_vm_ids_col_heights = None
-            if col_idx in vm_ids_heights:
-                curr_vm_ids_col_heights = vm_ids_heights[col_idx]
-            else:
-                curr_vm_ids_col_heights = []
-                vm_ids_heights[col_idx] = curr_vm_ids_col_heights
-
-            curr_vm_ids_col_heights.append((cell_class_name, height))
 
         merged_cell_info = merged_cell_map.get(cell.coordinate, {})
 
         if merged_cell_info:
             cell_data["attrs"].update(  # Update cell_data attrs
                 merged_cell_info["attrs"]
+            )
+
+        if isinstance(vm_id, str):
+            colspan = int(cell_data["attrs"].get("colspan") or 1)
+            rowspan = int(cell_data["attrs"].get("rowspan") or 1)
+            vm_cells_layout.append(
+                {
+                    "class_name": cell_class_name,
+                    "vm_id": vm_id,
+                    "col_idx_1_based": col_idx + 1,
+                    "row_idx_1_based": cell.row,
+                    "colspan": colspan,
+                    "rowspan": rowspan,
+                }
             )
 
         # new_styles, new_classes = get_css_components_from_cell(cell, merged_cell_info)
@@ -217,11 +227,43 @@ def get_worksheet_contents(
         if not col_details["hidden"]:
             table_width += col_details["width"]
 
-    for col_i_as_number in vm_ids_heights:
-        for class_height_tuple in vm_ids_heights[col_i_as_number]:
-            dimension_reference = "width"
+    def get_effective_col_width(col_idx_1_based: int) -> int:
+        column_letter = get_column_letter(col_idx_1_based)
+        col_details = columns_dimensions.get(column_letter)
+        if col_details is None:
+            return COL_WIDTH__DEFAULT
+        width = col_details.get("width")
+        if not isinstance(width, int):
+            return COL_WIDTH__DEFAULT
+        return max(width, 0)
 
-            vm_ids_dimension_references[class_height_tuple[0]] = dimension_reference
+    for vm_cell in vm_cells_layout:
+        class_name = vm_cell["class_name"]
+        vm_id = vm_cell["vm_id"]
+        start_col = vm_cell["col_idx_1_based"]
+        start_row = vm_cell["row_idx_1_based"]
+        colspan = vm_cell["colspan"]
+        rowspan = vm_cell["rowspan"]
+
+        width_px = sum(
+            get_effective_col_width(col_idx)
+            for col_idx in range(start_col, start_col + colspan)
+        )
+        height_px = sum(
+            get_effective_row_height(row_idx)
+            for row_idx in range(start_row, start_row + rowspan)
+        )
+
+        if width_px <= 0:
+            width_px = COL_WIDTH__DEFAULT
+        if height_px <= 0:
+            height_px = CELL_HEIGHT__DEFAULT
+
+        vm_ids_dimension_references[class_name] = {
+            "width": width_px,
+            "height": height_px,
+        }
+        vm_cell_vm_ids[class_name] = vm_id
 
     return {
         "rows": data_list,
@@ -229,6 +271,7 @@ def get_worksheet_contents(
         "images": images_to_data(ws),
         "vm_ids": used_vm_ids,
         "vm_ids_dimension_references": vm_ids_dimension_references,
+        "vm_cell_vm_ids": vm_cell_vm_ids,
         "table_width": table_width,
     }
 

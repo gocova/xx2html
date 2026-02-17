@@ -106,6 +106,7 @@ def get_xlsx_transform(
 
                 vm_ids = set()
                 vm_ids_dimension_references = dict()
+                vm_cell_vm_ids = dict()
 
                 enc_names = dict()
                 sheets_names = wb.sheetnames
@@ -140,6 +141,7 @@ def get_xlsx_transform(
                         vm_ids_dimension_references.update(
                             contents["vm_ids_dimension_references"]
                         )
+                        vm_cell_vm_ids.update(contents["vm_cell_vm_ids"])
 
                         html_tables.append(
                             sheet_html.format(
@@ -170,7 +172,11 @@ def get_xlsx_transform(
                         "Transform (wb|incell): Preparing incell images output..."
                     )
                     generated_incell_css = get_incell_css(
-                        vm_ids, vm_ids_dimension_references, incell_images_refs, archive
+                        vm_ids,
+                        vm_ids_dimension_references,
+                        vm_cell_vm_ids,
+                        incell_images_refs,
+                        archive,
                     )
                 else:
                     generated_incell_css = ""
