@@ -4,7 +4,7 @@ name = "xx2html"
 authors = [
     { name = "Jose Gonzalo Covarrubias", email = "gocova.dev+xx2html@gmail.com" },
 ]
-description = "Convert XLSX workbooks to styled HTML with support for conditional formatting and in-cell images."
+description = "Convert XLSX workbooks to single styled HTML file with support for conditional formatting and in-cell images."
 license = "MIT OR Apache-2.0"
 license-files = ["LICEN[CS]E*"]
 readme = "README.md"

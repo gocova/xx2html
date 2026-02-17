@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-MIT%20%2F%20Apache%202.0-green.svg)](https://opensource.org/licenses/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-orange?logo=buy-me-a-coffee&style=flat-square)](https://buymeacoffee.com/gocova)
 
-`xx2html` converts Excel workbooks (`.xlsx`) into HTML while preserving:
+`xx2html` converts Excel workbooks (`.xlsx`) into a single HTML file while preserving:
 
 - Cell formatting and styles
 - Conditional formatting classes
