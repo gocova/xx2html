@@ -6,7 +6,7 @@
 `xx2html` converts Excel workbooks (`.xlsx`) into a single HTML file while preserving:
 
 - Cell formatting and styles
-- Conditional formatting classes
+- Conditional formatting classes (via `condif2css`)
 - Worksheet link behavior
 - Embedded worksheet images and in-cell rich-value images
 
@@ -84,7 +84,9 @@ if not ok:
 
 ```bash
 uv sync --group dev
-python3 -m compileall src
+python3 tests/scripts/generate_fixtures.py
+python3 -m compileall src tests
+python3 -m pytest
 ```
 
 ## License
