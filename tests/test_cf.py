@@ -1,5 +1,7 @@
 import unittest
 
+from bs4 import BeautifulSoup
+
 from xx2html.core.cf import apply_cf_styles
 
 
@@ -49,6 +51,20 @@ class ApplyCfStylesTests(unittest.TestCase):
         self.assertIn('class="base"', output)
         self.assertNotIn("cf-red", output)
         self.assertNotIn("cf-blue", output)
+
+    def test_deduplicates_and_stabilizes_class_names(self):
+        html = (
+            "<table><tbody>"
+            '<tr><td id="Sheet1!A1" class="base cf-red">X</td></tr>'
+            "</tbody></table>"
+        )
+        rels = [("Sheet1", "A1", {"cf-red", "cf-bold"})]
+
+        output = apply_cf_styles(html, rels)
+        soup = BeautifulSoup(output, "lxml")
+        classes = soup.find("td", {"id": "Sheet1!A1"}).get("class")
+
+        self.assertEqual(["base", "cf-red", "cf-bold"], classes)
 
 
 if __name__ == "__main__":

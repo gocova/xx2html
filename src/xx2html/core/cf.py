@@ -17,13 +17,12 @@ def apply_cf_styles(
             f"apply_cf_styles: '{sheet_name}!{cell_ref}' with additional class_names: {class_names_str}"
         )
         for cell_tag in soup.find_all("td", id=f"{sheet_name}!{cell_ref}"):
-            # print(" ".join(class_names))
             previous_classes = cell_tag.get("class")
             previous_classes = (
                 previous_classes if previous_classes is not None else []
             )
-            # print(prev_classes)
-            # new_td_tag["class"] = " ".join([prev_classes, class_names_str])
-            cell_tag["class"] = previous_classes + [x for x in class_names]
-            # print(new_td_tag)
+            for class_name in sorted(class_names):
+                if class_name not in previous_classes:
+                    previous_classes.append(class_name)
+            cell_tag["class"] = previous_classes
     return str(soup)
