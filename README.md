@@ -1,29 +1,92 @@
-# README #
+# xx2html
+[![PyPI Version](https://img.shields.io/pypi/v/xx2html.svg)](https://pypi.org/project/xx2html/)
+[![License](https://img.shields.io/badge/License-MIT%20%2F%20Apache%202.0-green.svg)](https://opensource.org/licenses/)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-orange?logo=buy-me-a-coffee&style=flat-square)](https://buymeacoffee.com/gocova)
 
-This README would normally document whatever steps are necessary to get your application up and running.
+`xx2html` converts Excel workbooks (`.xlsx`) into HTML while preserving:
 
-### What is this repository for? ###
+- Cell formatting and styles
+- Conditional formatting classes
+- Worksheet link behavior
+- Embedded worksheet images and in-cell rich-value images
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+## Installation
 
-### How do I get set up? ###
+```bash
+pip install xx2html
+```
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+## Usage
 
-### Contribution guidelines ###
+```python
+from xx2html import apply_openpyxl_patches, get_xlsx_transform
 
-* Writing tests
-* Code review
-* Other guidelines
+# Explicit entrypoint. Patches are also applied automatically on import.
+apply_openpyxl_patches()
 
-### Who do I talk to? ###
+transform = get_xlsx_transform(
+    sheet_html=(
+        '<section id="{enc_sheet_name}" data-sheet-name="{sheet_name}">'
+        "{table_generated_html}"
+        "</section>"
+    ),
+    sheetname_html='<a class="sheet-nav" href="#{sheet_name}.A1">{sheet_name}</a>',
+    index_html=(
+        "<!doctype html><html><head>"
+        "{fonts_html}{core_css_html}{user_css_html}{generated_css_html}"
+        "{generated_incell_css_html}{conditional_css_html}"
+        "</head><body>{sheets_names_generated_html}{sheets_generated_html}"
+        "{safari_js}</body></html>"
+    ),
+    fonts_html="",
+    core_css="",
+    user_css="",
+    safari_js="",
+    apply_cf=True,
+)
 
-* Repo owner or admin
-* Other community or team contact
+ok, err = transform("input.xlsx", "output.html", "en_US")
+if not ok:
+    raise RuntimeError(err)
+```
+
+## Template Placeholders
+
+`sheet_html` requires:
+- `{enc_sheet_name}`
+- `{sheet_name}`
+- `{table_generated_html}`
+
+`sheetname_html` requires:
+- `{enc_sheet_name}`
+- `{sheet_name}`
+
+`index_html` requires:
+- `{sheets_generated_html}`
+- `{sheets_names_generated_html}`
+- `{source_filename}`
+- `{fonts_html}`
+- `{core_css_html}`
+- `{user_css_html}`
+- `{generated_css_html}`
+- `{generated_incell_css_html}`
+- `{safari_js}`
+- `{conditional_css_html}`
+
+## Monkey Patching Behavior
+
+`xx2html` relies on an `openpyxl` monkey patch to carry rich-value metadata used for in-cell images.
+
+- The patch is applied automatically when `xx2html.core` is imported.
+- The explicit API entrypoint is `apply_openpyxl_patches()`.
+
+## Development
+
+```bash
+uv sync --group dev
+python3 -m compileall src
+```
+
+## License
+
+`xx2html` is dual-licensed under MIT or Apache-2.0.

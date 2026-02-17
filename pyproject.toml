@@ -1,41 +1,39 @@
-# SPDX-FileCopyrightText: 2025 Jose Gonzalo Covarrubias
+# SPDX-FileCopyrightText: 2026 Jose Gonzalo Covarrubias
 [project]
 name = "xx2html"
 authors = [
-    { name = "Jose Gonzalo Covarrubias", email = "gocova.dev@gmail.com" },
+    { name = "Jose Gonzalo Covarrubias", email = "gocova.dev+xx2html@gmail.com" },
 ]
-description = "Add your description here"
+description = "Convert XLSX workbooks to styled HTML with support for conditional formatting and in-cell images."
 license = "MIT OR Apache-2.0"
 license-files = ["LICEN[CS]E*"]
 readme = "README.md"
 dependencies = [
     "bs4>=0.0.2",
+    "condif2css>=0.13.0b6021601",
     "lxml>=5.3.1",
-    "mvin>=0.5.0b4",
+    "mvin>=0.13.0b6021601",
     "openpyxl>=3.1.5",
     "pillow>=11.0.0",
     "xlsx2html>=0.6.1",
 ]
 dynamic = ["version"]
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    # "License :: OSI Approved :: MIT License",
-    # "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Development Status :: 4 - Beta",
 ]
 
 [project.urls]
-# Homepage = "https://example.com"
-# Documentation = "https://readthedocs.org"
-# Repository = "https://github.com/me/spam.git"
-# Issues = "https://github.com/me/spam/issues"
-# Changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+Homepage = "https://bitbucket.org/gocova_dev/xx2html"
+Repository = "https://bitbucket.org/gocova_dev/xx2html"
+Issues = "https://bitbucket.org/gocova_dev/xx2html/issues"
 
 [build-system]
 requires = ["pdm-backend"]
@@ -44,3 +42,9 @@ build-backend = "pdm.backend"
 [tool.pdm]
 version = { source = "file", path = "src/xx2html/_constants.py" }
 distribution = true
+
+[dependency-groups]
+dev = [
+    "types-lxml>=2026.2.16",
+    "types-openpyxl>=3.1.5.20250919",
+]
