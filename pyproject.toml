@@ -10,9 +10,8 @@ license-files = ["LICEN[CS]E*"]
 readme = "README.md"
 dependencies = [
     "bs4>=0.0.2",
-    "condif2css>=0.13.0b6021601",
+    "condif2css==0.15.0rc1",
     "lxml>=5.3.1",
-    "mvin>=0.13.0b6021601",
     "openpyxl>=3.1.5",
     "pillow>=11.0.0",
     "xlsx2html>=0.6.1",

@@ -141,7 +141,7 @@ wheels = [
 
 [[package]]
 name = "condif2css"
-version = "0.13.0b6021601"
+version = "0.15.0rc1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "blake3" },
@@ -149,9 +149,9 @@ dependencies = [
     { name = "mvin" },
     { name = "openpyxl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/a3/9774791af4549bc70d7af36980bfe220e88e82627e668bd34569ceaab926/condif2css-0.13.0b6021601.tar.gz", hash = "sha256:bbcf908325a4002485b1c824d2f8099a06fed9092ddbbd5469e912718f5a7ea2", size = 25608 }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/a9/4b435d675b0249427dc3673a9f324eadd18af8637837dbd111ea0535b251/condif2css-0.15.0rc1.tar.gz", hash = "sha256:354fa0c89feb2fc11c81f28b81323de243d5da8d24c6ffff2eb7c811c3018686", size = 26853 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7c/26/b945eba54c120a2c6b4b5528d3a8e6b3024ce0399c117a150a8b4fe60eb7/condif2css-0.13.0b6021601-py3-none-any.whl", hash = "sha256:ae654843b8e509033bec7a514d145ade8162588858cdaeff2a0b429873da55dc", size = 20497 },
+    { url = "https://files.pythonhosted.org/packages/d6/56/a2bbdad89801f9a53d6ac61954c9a38342a6138906484e7e3ee6a2eea843/condif2css-0.15.0rc1-py3-none-any.whl", hash = "sha256:7fc07b6c89c5ffe464a6e07744ee85be108bb608fb61928d817278391d656079", size = 22319 },
 ]
 
 [[package]]
@@ -437,11 +437,11 @@ wheels = [
 
 [[package]]
 name = "mvin"
-version = "0.13.0b6021601"
+version = "0.15.0rc1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/98/00/766479cf4d1786f40e09eb1158b941f97c034cffc07553d8750ec2bbf0fa/mvin-0.13.0b6021601.tar.gz", hash = "sha256:c8b3f9d7586678a5d07a612f674997fbb09e08e12220f503b1704bb04ee07126", size = 20848 }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/1a/bb93f516f1e1eac2c8f18b3eda9d7e77e97ddb8aca406559338ca4443e5e/mvin-0.15.0rc1.tar.gz", hash = "sha256:f3f6a1b3a99e0f8b7418036165daf661b61738848f64040cc78f00e634c1645b", size = 25260 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/af/6a/dd9d1cbd7773e01fef51e57aa0a4526b30254630b935b1a249d18cfa156c/mvin-0.13.0b6021601-py3-none-any.whl", hash = "sha256:342f24bea1218fc9fd684a5bd4d295fd0b4a79ba4d7bce258065768f9e592f13", size = 17000 },
+    { url = "https://files.pythonhosted.org/packages/d0/c2/6c86745dc8bb8904f4bcb02edb222d28bd5e3a6a8c4e24ead31ae3b80ec1/mvin-0.15.0rc1-py3-none-any.whl", hash = "sha256:9424da99db8be34cb41bedcef902340586467395d16639131588dcc418d67a50", size = 25708 },
 ]
 
 [[package]]
@@ -762,7 +762,6 @@ dependencies = [
     { name = "bs4" },
     { name = "condif2css" },
     { name = "lxml" },
-    { name = "mvin" },
     { name = "openpyxl" },
     { name = "pillow" },
     { name = "xlsx2html" },
@@ -779,9 +778,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bs4", specifier = ">=0.0.2" },
-    { name = "condif2css", specifier = ">=0.13.0b6021601" },
+    { name = "condif2css", specifier = "==0.15.0rc1" },
     { name = "lxml", specifier = ">=5.3.1" },
-    { name = "mvin", specifier = ">=0.13.0b6021601" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pillow", specifier = ">=11.0.0" },
     { name = "xlsx2html", specifier = ">=0.6.1" },
