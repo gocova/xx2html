@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 - Standardized public transform API naming to `create_xlsx_transform`.
 - Standardized internal `cova_` naming consistency in patch/render helpers.
 - Centralized shared type aliases and typed render payloads in `src/xx2html/core/types.py`.
+- Migrated project metadata URLs from Bitbucket to GitHub (`gocova/xx2html`).
+- Switched package versioning to SCM/tag-driven versioning for SemVer-based stable releases.
+- Updated CI/release automation to GitHub Actions with separate `ci` and `publish` workflows.
 
 ### Fixed
 - Fixed local-sheet link rewriting for sheet names that contain dots (for example `#Q1.2026.A1`).

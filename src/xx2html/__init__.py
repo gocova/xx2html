@@ -1,6 +1,10 @@
-from xx2html.core import apply_openpyxl_patches, create_xlsx_transform
-import xx2html._constants as constants
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = constants.__version__
+from xx2html.core import apply_openpyxl_patches, create_xlsx_transform
+
+try:
+    __version__ = version("xx2html")
+except PackageNotFoundError:
+    __version__ = "0.0.0"
 
 __all__ = ["__version__", "apply_openpyxl_patches", "create_xlsx_transform"]

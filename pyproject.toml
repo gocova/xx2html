@@ -28,17 +28,21 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://bitbucket.org/gocova_dev/xx2html"
-Repository = "https://bitbucket.org/gocova_dev/xx2html"
-Issues = "https://bitbucket.org/gocova_dev/xx2html/issues"
+Homepage = "https://github.com/gocova/xx2html"
+Repository = "https://github.com/gocova/xx2html"
+Issues = "https://github.com/gocova/xx2html/issues"
 
 [build-system]
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
 [tool.pdm]
-version = { source = "file", path = "src/xx2html/_constants.py" }
 distribution = true
+
+[tool.pdm.version]
+source = "scm"
+tag_filter = "v*"
+fallback_version = "0.0.0dev1"
 
 [dependency-groups]
 dev = [

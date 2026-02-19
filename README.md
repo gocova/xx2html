@@ -1,5 +1,6 @@
 # xx2html
 [![PyPI Version](https://img.shields.io/pypi/v/xx2html.svg)](https://pypi.org/project/xx2html/)
+[![CI](https://github.com/gocova/xx2html/actions/workflows/ci.yml/badge.svg)](https://github.com/gocova/xx2html/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT%20%2F%20Apache%202.0-green.svg)](https://opensource.org/licenses/)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-orange?logo=buy-me-a-coffee&style=flat-square)](https://buymeacoffee.com/gocova)
 
@@ -9,6 +10,9 @@
 - Conditional formatting classes (via `condif2css`)
 - Worksheet link behavior
 - Embedded worksheet images and in-cell rich-value images
+
+Repository: <https://github.com/gocova/xx2html>  
+Issues: <https://github.com/gocova/xx2html/issues>
 
 ## Installation
 
@@ -102,11 +106,16 @@ Core helpers (`xx2html.core`, useful for advanced integrations):
 ## Development
 
 ```bash
-uv sync --group dev
+pdm sync --group dev --frozen-lockfile
 python3 tests/scripts/generate_fixtures.py
-python3 -m compileall src tests
-python3 -m pytest
+pdm run python -m compileall src tests
+pdm run pytest
 ```
+
+## Release
+
+- Stable releases are tag-driven and use SemVer tags: `vMAJOR.MINOR.PATCH` (for example `v1.2.3`).
+- Push the tag to GitHub; the `publish` workflow builds from SCM metadata and publishes with PyPI Trusted Publishing.
 
 ## License
 
