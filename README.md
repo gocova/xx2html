@@ -103,8 +103,11 @@ Core helpers (`xx2html.core`, useful for advanced integrations):
 - `{user_css_html}`
 - `{generated_css_html}`
 - `{generated_incell_css_html}`
-- `{safari_js}`
 - `{conditional_css_html}`
+
+`index_html` optional:
+- `{safari_js}`
+  - If omitted while `safari_js` is non-empty, xx2html logs a warning and skips injection.
 
 Generated output also includes:
 - `<meta name="generator" content="xx2html {version}">` in `<head>`

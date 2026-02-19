@@ -21,6 +21,12 @@ INDEX_HTML = (
     "{generated_incell_css_html}{conditional_css_html}"
     "</head><body data-source=\"{source_filename}\">{sheets_names_generated_html}{sheets_generated_html}{safari_js}</body></html>"
 )
+INDEX_HTML_NO_SAFARI_JS = (
+    "<!doctype html><html><head>"
+    "{fonts_html}{core_css_html}{user_css_html}{generated_css_html}"
+    "{generated_incell_css_html}{conditional_css_html}"
+    "</head><body data-source=\"{source_filename}\">{sheets_names_generated_html}{sheets_generated_html}</body></html>"
+)
 
 
 def _build_transform(**kwargs):
@@ -59,6 +65,36 @@ class TransformOptionsTests(unittest.TestCase):
             _build_transform(max_rows=0)
         with self.assertRaises(ValueError):
             _build_transform(max_cols=0)
+
+    def test_create_transform_allows_index_template_without_safari_js(self):
+        transform = create_xlsx_transform(
+            sheet_html=SHEET_HTML,
+            sheetname_html=SHEETNAME_HTML,
+            index_html=INDEX_HTML_NO_SAFARI_JS,
+            fonts_html="",
+            core_css="",
+            user_css="",
+            safari_js="console.log('safari');",
+            apply_cf=False,
+        )
+        self.assertTrue(callable(transform))
+
+    def test_create_transform_warns_when_safari_js_placeholder_is_missing(self):
+        with self.assertLogs(level="WARNING") as warning_context:
+            create_xlsx_transform(
+                sheet_html=SHEET_HTML,
+                sheetname_html=SHEETNAME_HTML,
+                index_html=INDEX_HTML_NO_SAFARI_JS,
+                fonts_html="",
+                core_css="",
+                user_css="",
+                safari_js="console.log('safari');",
+                apply_cf=False,
+            )
+
+        warning_output = "\n".join(warning_context.output)
+        self.assertIn("safari_js provided", warning_output)
+        self.assertIn("{safari_js} is missing from index_html", warning_output)
 
     def test_raise_on_error_propagates_original_exception(self):
         transform = _build_transform(raise_on_error=True)

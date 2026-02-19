@@ -52,7 +52,6 @@ _REQUIRED_INDEX_TEMPLATE_FIELDS = {
     "user_css_html",
     "generated_css_html",
     "generated_incell_css_html",
-    "safari_js",
     "conditional_css_html",
 }
 
@@ -274,6 +273,12 @@ def create_xlsx_transform(
     _validate_template_fields(
         "index_html", index_html, _REQUIRED_INDEX_TEMPLATE_FIELDS
     )
+    index_template_fields = _extract_template_fields(index_html)
+    if safari_js.strip() and "safari_js" not in index_template_fields:
+        logging.warning(
+            "create_xlsx_transform: safari_js provided but {safari_js} is missing "
+            "from index_html; safari_js will be ignored."
+        )
     validated_max_sheets = _validate_optional_limit("max_sheets", max_sheets)
     validated_max_rows = _validate_optional_limit("max_rows", max_rows)
     validated_max_cols = _validate_optional_limit("max_cols", max_cols)
