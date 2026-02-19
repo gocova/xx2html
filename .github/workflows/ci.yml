@@ -24,7 +24,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install tooling
-        run: python -m pip install --upgrade pip pdm
+        run: python -m pip install --upgrade pip pdm ruff mypy
 
       - name: Cache PDM
         uses: actions/cache@v4
@@ -42,6 +42,12 @@ jobs:
 
       - name: Install dependencies
         run: pdm sync --group dev
+
+      - name: Run lint checks
+        run: ruff check src tests
+
+      - name: Run type checks
+        run: mypy src/xx2html
 
       - name: Run tests
         run: pdm run pytest -q

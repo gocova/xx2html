@@ -2,11 +2,15 @@
 
 """Monkey patches required to expose rich-value metadata in openpyxl cells."""
 
+import os
+import re
+
 # Monkey patch for: WorkSheetParser
 from openpyxl.worksheet._reader import WorkSheetParser
 
 # Monkey patch for: WorksheetReader
 from openpyxl.worksheet._reader import WorksheetReader
+from openpyxl import __version__ as OPENPYXL_VERSION
 
 ## required imports
 from warnings import warn
@@ -20,6 +24,48 @@ from openpyxl.worksheet._reader import (
 from openpyxl.cell.text import Text
 
 from xx2html.core.types import CovaCell
+
+SUPPORTED_OPENPYXL_MAJOR_MINORS = {(3, 1)}
+ALLOW_UNSUPPORTED_OPENPYXL_ENV = "XX2HTML_ALLOW_UNSUPPORTED_OPENPYXL"
+
+
+def _get_openpyxl_major_minor(version_value: str) -> tuple[int, int] | None:
+    version_match = re.match(r"^(\d+)\.(\d+)", version_value)
+    if version_match is None:
+        return None
+    return int(version_match.group(1)), int(version_match.group(2))
+
+
+def ensure_openpyxl_compatibility() -> None:
+    """Validate that the current openpyxl version is in the tested range."""
+    parsed_version = _get_openpyxl_major_minor(OPENPYXL_VERSION)
+    if parsed_version is None:
+        warn(
+            "Unable to parse openpyxl version '%s'; continuing without a strict "
+            "compatibility guarantee." % OPENPYXL_VERSION
+        )
+        return
+
+    if parsed_version in SUPPORTED_OPENPYXL_MAJOR_MINORS:
+        return
+
+    compatibility_error = (
+        "Unsupported openpyxl version '%s'. Tested major.minor versions: %s. "
+        "Set %s=1 to bypass this check at your own risk."
+        % (
+            OPENPYXL_VERSION,
+            ", ".join(
+                f"{major}.{minor}"
+                for major, minor in sorted(SUPPORTED_OPENPYXL_MAJOR_MINORS)
+            ),
+            ALLOW_UNSUPPORTED_OPENPYXL_ENV,
+        )
+    )
+    if os.getenv(ALLOW_UNSUPPORTED_OPENPYXL_ENV) == "1":
+        warn(compatibility_error)
+        return
+
+    raise RuntimeError(compatibility_error)
 
 
 def cova_parse_cell(self, element) -> dict[str, object]:
@@ -143,7 +189,7 @@ def cova_bind_cells(self) -> None:
     The CovaCells are then stored in the worksheet's _cells dictionary.
 
     """
-    for idx, row in self.parser.parse():
+    for _, row in self.parser.parse():
         for cell in row:
             style_id = cell.get("style_id", 0)
             cell_styles = self.ws.parent._cell_styles
@@ -176,5 +222,6 @@ def cova_bind_cells(self) -> None:
 
 def apply_patches() -> None:
     """Install parser/reader monkey patches used by `xx2html`."""
+    ensure_openpyxl_compatibility()
     WorkSheetParser.parse_cell = cova_parse_cell
     WorksheetReader.bind_cells = cova_bind_cells

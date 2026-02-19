@@ -55,3 +55,5 @@ Thumbs.db
 
 # Coverage reports
 .coverage
+
+uv.lock

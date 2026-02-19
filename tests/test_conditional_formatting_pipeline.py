@@ -15,12 +15,12 @@ SHEET_HTML = (
     "{table_generated_html}"
     "</section>"
 )
-SHEETNAME_HTML = '<a class="sheet-nav" href="#{sheet_name}.A1">{sheet_name}</a>'
+SHEETNAME_HTML = '<a class="sheet-nav" href="#{enc_sheet_name}">{sheet_name}</a>'
 INDEX_HTML = (
     "<!doctype html><html><head>"
     "{fonts_html}{core_css_html}{user_css_html}{generated_css_html}"
     "{generated_incell_css_html}{conditional_css_html}"
-    "</head><body>{sheets_names_generated_html}{sheets_generated_html}{safari_js}</body></html>"
+    "</head><body data-source=\"{source_filename}\">{sheets_names_generated_html}{sheets_generated_html}{safari_js}</body></html>"
 )
 
 

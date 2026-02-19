@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from urllib.parse import urlparse
+
 from bs4 import BeautifulSoup
 
 
@@ -40,6 +41,22 @@ def update_links(
 ) -> str:
     """Rewrite anchor tags for worksheet-local and external navigation."""
     soup = BeautifulSoup(html, "lxml")
+    update_links_in_soup(
+        soup,
+        encoded_sheet_names,
+        update_local_links=update_local_links,
+        update_ext_links=update_ext_links,
+    )
+    return str(soup)
+
+
+def update_links_in_soup(
+    soup: BeautifulSoup,
+    encoded_sheet_names: dict[str, str],
+    update_local_links: bool = True,
+    update_ext_links: bool = True,
+) -> None:
+    """Rewrite links in-place on an existing parsed HTML soup."""
 
     def resolve_sheet_name(local_reference: str) -> str:
         """Resolve local reference text to a worksheet name key."""
@@ -148,4 +165,3 @@ def update_links(
                 for child in anchor_tag.contents:
                     external_anchor_tag.append(deepcopy(child))
                 anchor_tag.replace_with(external_anchor_tag)
-    return str(soup)

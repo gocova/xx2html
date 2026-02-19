@@ -1,5 +1,6 @@
 import unittest
 import warnings
+from os import environ
 from types import SimpleNamespace
 from xml.etree.ElementTree import Element, SubElement
 from unittest.mock import patch
@@ -202,6 +203,28 @@ class CovaBindCellsTests(unittest.TestCase):
         self.assertIs(patch_module.WorkSheetParser.parse_cell, patch_module.cova_parse_cell)
         self.assertIs(
             patch_module.WorksheetReader.bind_cells, patch_module.cova_bind_cells
+        )
+
+    def test_apply_patches_rejects_unsupported_openpyxl_version(self):
+        with patch.object(patch_module, "OPENPYXL_VERSION", "9.9.0"), patch.dict(
+            environ,
+            {patch_module.ALLOW_UNSUPPORTED_OPENPYXL_ENV: "0"},
+            clear=False,
+        ):
+            with self.assertRaises(RuntimeError):
+                apply_patches()
+
+    def test_apply_patches_can_bypass_version_guard_with_env_override(self):
+        with patch.object(patch_module, "OPENPYXL_VERSION", "9.9.0"), patch.dict(
+            environ,
+            {patch_module.ALLOW_UNSUPPORTED_OPENPYXL_ENV: "1"},
+            clear=False,
+        ):
+            with warnings.catch_warnings(record=True) as warning_records:
+                warnings.simplefilter("always")
+                apply_patches()
+        self.assertTrue(
+            any("Unsupported openpyxl version" in str(w.message) for w in warning_records)
         )
 
     def test_bind_cells_falls_back_to_default_style_for_out_of_range_style_id(self):

@@ -43,6 +43,8 @@ def get_worksheet_contents(
     get_css_from_cell: Callable[[Cell | CovaCell | MergedCell, dict], set[str]],
     locale: None | str = None,
     ws_index: int = -1,
+    max_rows: int | None = None,
+    max_cols: int | None = None,
 ) -> WorksheetContents:
     """Extract normalized render data for one worksheet.
 
@@ -202,7 +204,14 @@ def get_worksheet_contents(
     current_process_cell = first_row_process_cell
 
     data_list = []
-    for row_i, row in enumerate(ws.iter_rows()):
+    for row_i, row in enumerate(
+        ws.iter_rows(
+            min_row=1,
+            max_row=max_rows,
+            min_col=1,
+            max_col=max_cols,
+        )
+    ):
         data_row = []
         data_list.append(data_row)
         for col_idx, cell in enumerate(row):
