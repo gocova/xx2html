@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetches all history and tags
 
       - name: Validate PyPI tag version (PEP 440)
         run: |
@@ -50,7 +52,7 @@ jobs:
         run: pdm sync --group dev
 
       - name: Build package
-        run: pdm build
+        run: pdm build --no-sdist # Sometimes sdist triggers the metadata check differently
 
       - name: Check distributions
         run: python -m twine check dist/*
