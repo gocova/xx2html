@@ -41,8 +41,6 @@ distribution = true
 
 [tool.pdm.version]
 source = "scm"
-tag_filter = "v*"
-fallback_version = "0.0.0dev1"
 
 [dependency-groups]
 dev = [
