@@ -46,6 +46,7 @@ source = "scm"
 dev = [
     "pytest>=9.0.2",
     "pytest-cov>=7.0.0",
+    "twine>=6.2.0",
     "types-lxml>=2026.2.16",
     "types-openpyxl>=3.1.5.20250919",
 ]
