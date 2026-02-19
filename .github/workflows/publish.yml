@@ -38,8 +38,20 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pdm
 
-      - name: Check lockfile sync
+      - name: Check lockfile is up to date
         run: pdm lock --check
+
+      - name: Cache PDM
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pdm
+          key: pdm-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+          restore-keys: |
+            pdm-${{ runner.os }}-${{ matrix.python-version }}-
+            pdm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pdm sync --group dev
 
       - name: Build distributions
         run: pdm build
