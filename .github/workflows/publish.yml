@@ -20,10 +20,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate stable SemVer tag
+      - name: Validate PyPI tag version
         run: |
-          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?(\.post[0-9]+)?(\.dev[0-9]+)?(\+[A-Za-z0-9]+([._-][A-Za-z0-9]+)*)?$ ]]; then
-            echo "Tag '${GITHUB_REF_NAME}' must match vMAJOR.MINOR.PATCH"
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?(\.post[0-9]+)?(\.dev[0-9]+)?$ ]]; then
+            echo "Tag '${GITHUB_REF_NAME}' must match vMAJOR.MINOR.PATCH[pre][.postN][.devN] and must not include +local metadata"
             exit 1
           fi
 
@@ -45,9 +45,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pdm
-          key: pdm-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pdm.lock') }}
+          key: pdm-${{ runner.os }}-3.13-${{ hashFiles('pdm.lock') }}
           restore-keys: |
-            pdm-${{ runner.os }}-${{ matrix.python-version }}-
+            pdm-${{ runner.os }}-3.13-
             pdm-${{ runner.os }}-
 
       - name: Install dependencies
