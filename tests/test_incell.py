@@ -123,6 +123,26 @@ class InCellCssTests(unittest.TestCase):
         self.assertIn("width: 100%;", css)
         self.assertIn("height: 100%;", css)
 
+    def test_missing_cell_vm_mapping_uses_default_cell_fit_rules(self):
+        zip_buffer = io.BytesIO()
+        with ZipFile(zip_buffer, mode="w", compression=ZIP_DEFLATED) as zf:
+            zf.writestr("xl/media/image1.png", _make_png(64, 64))
+
+        zip_buffer.seek(0)
+        with ZipFile(zip_buffer, mode="r") as zf:
+            css = get_incell_css(
+                vm_ids={"1"},
+                vm_ids_dimension_references={"cell_missing_vm": {"width": 80, "height": 120}},
+                vm_cell_vm_ids={},
+                incell_images_refs={"1": "xl/media/image1.png"},
+                archive=zf,
+            )
+
+        self.assertIn(".vm-richvaluerel_rid1 img", css)
+        self.assertIn(".cell_missing_vm img", css)
+        self.assertIn("width: 100%;", css)
+        self.assertIn("height: 100%;", css)
+
 
 if __name__ == "__main__":
     unittest.main()

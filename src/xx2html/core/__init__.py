@@ -5,10 +5,12 @@ import os
 from importlib.metadata import PackageNotFoundError, version as get_installed_version
 from string import Formatter
 from tempfile import NamedTemporaryFile
+from typing import Any
 from zipfile import ZipFile
 
 from bs4 import BeautifulSoup, Comment
 from openpyxl import load_workbook
+from openpyxl.workbook.workbook import Workbook
 from openpyxl.styles.differential import DifferentialStyleList
 
 # Monkey patch!
@@ -18,6 +20,7 @@ from xx2html.core.patches.openpyxl import apply_patches
 from .incell import get_incell_css
 from .links import update_links_in_soup
 from .types import (
+    CellDimensions,
     ConditionalFormattingRelation,
     TransformResult,
     XlsxTransformCallable,
@@ -161,21 +164,14 @@ def _write_html_atomically(dest: str, html: str) -> None:
 
 
 def _build_cf_style_relations(
-    workbook,
-    conditional_formatting_rule_details: dict,
+    workbook: Workbook,
+    conditional_formatting_rule_details: dict[str, tuple[Any, ...]],
     get_cf_css_from_diff,
 ) -> list[ConditionalFormattingRelation]:
     cf_style_relations: list[ConditionalFormattingRelation] = []
-    if not (
-        hasattr(workbook, "_differential_styles")
-        and isinstance(
-            workbook._differential_styles,  # type: ignore
-            DifferentialStyleList,
-        )
-    ):
+    differential_styles = getattr(workbook, "_differential_styles", None)
+    if not isinstance(differential_styles, DifferentialStyleList):
         return cf_style_relations
-
-    differential_styles = workbook._differential_styles  # type: ignore
     differential_styles_list = getattr(differential_styles, "styles", None)
     differential_styles_count = (
         len(differential_styles_list)
@@ -286,14 +282,14 @@ def create_xlsx_transform(
         source: str, dest: str, locale: str
     ) -> TransformResult:
         """Transform one XLSX file into one HTML file."""
-        workbook = None
-        workbook_archive = None
+        workbook: Workbook | None = None
+        workbook_archive: ZipFile | None = None
         try:
             if _paths_refer_to_same_file(source, dest):
                 raise ValueError("Source and destination paths must be different.")
 
-            sheet_navigation_links = []
-            sheet_html_sections = []
+            sheet_navigation_links: list[str] = []
+            sheet_html_sections: list[str] = []
 
             logging.info(f"Transform (wb): Reading '{source}' as xlsx file...")
             workbook = load_workbook(source, data_only=True, rich_text=True)
@@ -320,7 +316,7 @@ def create_xlsx_transform(
             )
 
             logging.debug("Transform (wb|incell): Reading incell images...")
-            incell_images_refs = {}
+            incell_images_refs: dict[str, str] = {}
             try:
                 workbook_archive = ZipFile(source, "r")
                 incell_images_refs, incell_error = get_incell_images_refs(
@@ -338,9 +334,9 @@ def create_xlsx_transform(
                     workbook_archive.close()
                     workbook_archive = None
 
-            vm_ids = set()
-            vm_ids_dimension_references = dict()
-            vm_cell_vm_ids = dict()
+            vm_ids: set[str] = set()
+            vm_ids_dimension_references: dict[str, CellDimensions] = {}
+            vm_cell_vm_ids: dict[str, str] = {}
 
             visible_sheet_names = [
                 sheet_name
@@ -350,8 +346,8 @@ def create_xlsx_transform(
             if validated_max_sheets is not None:
                 visible_sheet_names = visible_sheet_names[:validated_max_sheets]
 
-            encoded_sheet_names = dict()
-            conditional_formatting_rule_details = {}
+            encoded_sheet_names: dict[str, str] = {}
+            conditional_formatting_rule_details: dict[str, tuple[Any, ...]] = {}
 
             for sheet_name in visible_sheet_names:
                 worksheet = workbook[sheet_name]

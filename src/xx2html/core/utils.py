@@ -34,6 +34,18 @@ CELL_HEIGHT__DEFAULT = 19  # 19px
 # MAX_COLS_EXCEL = 16_384
 
 
+def _int_or_default(value: object, default: int) -> int:
+    if isinstance(value, int):
+        return value
+    return default
+
+
+def _column_or_default(value: object, default: int) -> int | str:
+    if isinstance(value, (int, str)):
+        return value
+    return default
+
+
 def get_worksheet_contents(
     ws: Worksheet,
     # css_registry: CssRegistry,
@@ -130,7 +142,7 @@ def get_worksheet_contents(
 
         cell_data: CellRenderData = {  # initialization of cell_data
             "attrs": {"id": get_cell_id(cell)},
-            "column": cell.column,
+            "column": _column_or_default(cell.column, col_idx + 1),
             "row": cell.row,
             "value": value,
             "formatted_value": format_cell(cell, locale=locale, f_cell=f_cell),
@@ -163,8 +175,8 @@ def get_worksheet_contents(
             )
 
         if isinstance(vm_id, str):
-            colspan = int(cell_data["attrs"].get("colspan") or 1)
-            rowspan = int(cell_data["attrs"].get("rowspan") or 1)
+            colspan = _int_or_default(cell_data["attrs"].get("colspan"), 1)
+            rowspan = _int_or_default(cell_data["attrs"].get("rowspan"), 1)
             vm_cells_layout.append(
                 {
                     "class_name": cell_class_name,
@@ -203,7 +215,7 @@ def get_worksheet_contents(
 
     current_process_cell = first_row_process_cell
 
-    data_list = []
+    data_list: list[list[CellRenderData]] = []
     for row_i, row in enumerate(
         ws.iter_rows(
             min_row=1,
@@ -212,7 +224,7 @@ def get_worksheet_contents(
             max_col=max_cols,
         )
     ):
-        data_row = []
+        data_row: list[CellRenderData] = []
         data_list.append(data_row)
         for col_idx, cell in enumerate(row):
             current_process_cell(col_idx, cell)

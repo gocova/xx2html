@@ -4,6 +4,7 @@
 
 import os
 import re
+from typing import Any, cast
 
 # Monkey patch for: WorkSheetParser
 from openpyxl.worksheet._reader import WorkSheetParser
@@ -19,7 +20,6 @@ from openpyxl.utils.datetime import from_excel, from_ISO8601
 from openpyxl.worksheet._reader import (
     parse_richtext_string,
     VALUE_TAG, FORMULA_TAG, INLINE_STRING,
-    _cast_number, # type: ignore
 )
 from openpyxl.cell.text import Text
 
@@ -68,6 +68,23 @@ def ensure_openpyxl_compatibility() -> None:
     raise RuntimeError(compatibility_error)
 
 
+def _cova_cast_number(value: object) -> int | float:
+    if isinstance(value, bool):
+        raise TypeError("Boolean is not a numeric cell payload.")
+    if isinstance(value, (int, float)):
+        return value
+    if not isinstance(value, str):
+        raise TypeError(f"Unsupported numeric payload type: {type(value)!r}")
+
+    raw_value = value.strip()
+    if raw_value == "":
+        raise ValueError("Empty numeric payload")
+
+    if "." in raw_value or "e" in raw_value.lower():
+        return float(raw_value)
+    return int(raw_value)
+
+
 def cova_parse_cell(self, element) -> dict[str, object]:
     """
     Parse a cell element into a dictionary containing the cell's row, column, value, data type, style id, and vm id.
@@ -112,7 +129,7 @@ def cova_parse_cell(self, element) -> dict[str, object]:
     elif value is not None:
         if data_type == "n":
             try:
-                value = _cast_number(value)
+                value = _cova_cast_number(value)
             except (TypeError, ValueError):
                 warn(
                     f"Cell {coordinate} has an invalid numeric value {value!r}. The cell will be treated as an error."
@@ -210,7 +227,7 @@ def cova_bind_cells(self) -> None:
                 style_array=style,
                 vm_id=cell["vm_id"],
             )
-            cova_cell._value = cell["value"]
+            setattr(cova_cell, "_value", cell["value"])
             cova_cell.data_type = cell["data_type"]
 
             self.ws._cells[(cell["row"], cell["column"])] = cova_cell
@@ -223,5 +240,5 @@ def cova_bind_cells(self) -> None:
 def apply_patches() -> None:
     """Install parser/reader monkey patches used by `xx2html`."""
     ensure_openpyxl_compatibility()
-    WorkSheetParser.parse_cell = cova_parse_cell
-    WorksheetReader.bind_cells = cova_bind_cells
+    setattr(cast(Any, WorkSheetParser), "parse_cell", cova_parse_cell)
+    setattr(cast(Any, WorksheetReader), "bind_cells", cova_bind_cells)

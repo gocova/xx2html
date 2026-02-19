@@ -65,7 +65,13 @@ def _get_xml_from_archive(
 def _get_relationship_targets(archive: ZipFile) -> RelationshipTargets:
     """Read relationship ids (`rId*`) and target paths for rich data."""
     image_rels = get_dependents(archive, _RICHVALUE_REL_XML_RELS)
-    return {rel.Id: rel.Target for rel in image_rels}
+    relationship_targets: RelationshipTargets = {}
+    for rel in image_rels:
+        rel_id = getattr(rel, "Id", None)
+        rel_target = getattr(rel, "Target", None)
+        if isinstance(rel_id, str) and isinstance(rel_target, str):
+            relationship_targets[rel_id] = rel_target
+    return relationship_targets
 
 
 def _get_local_image_type_indexes(richvalues_structure_tree: etree._Element) -> set[str]:

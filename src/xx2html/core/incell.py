@@ -13,7 +13,7 @@ def get_incell_css(
     vm_ids: set[str],
     vm_ids_dimension_references: dict[str, CellDimensions],
     vm_cell_vm_ids: dict[str, str],
-    incell_images_refs: dict[str | None, str],
+    incell_images_refs: dict[str, str],
     archive: ZipFile,
 ) -> str:
     """Create per-vm and per-cell CSS rules for in-cell image rendering."""
@@ -70,8 +70,10 @@ def get_incell_css(
         )
 
     for cell_class_name, cell_dimensions in vm_ids_dimension_references.items():
-        vm_id = vm_cell_vm_ids.get(cell_class_name)
-        image_spec = image_specs.get(vm_id, {})
+        cell_vm_id = vm_cell_vm_ids.get(cell_class_name)
+        image_spec: dict[str, object] = {}
+        if cell_vm_id is not None:
+            image_spec = image_specs.get(cell_vm_id, {})
         cell_width = cell_dimensions.get("width", 0)
         cell_height = cell_dimensions.get("height", 0)
         img_width = image_spec.get("width")

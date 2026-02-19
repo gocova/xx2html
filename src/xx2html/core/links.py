@@ -33,6 +33,29 @@ def _is_rewritable_external_href(href: str) -> bool:
     return parsed_href.scheme in {"http", "https"}
 
 
+def _stringify_attr_value(value: object) -> str:
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple, set)):
+        parts: list[str] = []
+        for item in value:
+            if isinstance(item, str):
+                parts.append(item)
+            else:
+                parts.append(str(item))
+        return " ".join(part for part in parts if part)
+    return str(value)
+
+
+def _collect_base_attrs(anchor_tag, excluded_keys: set[str]) -> dict[str, str]:
+    base_attrs: dict[str, str] = {}
+    for key, value in anchor_tag.attrs.items():
+        if key in excluded_keys:
+            continue
+        base_attrs[str(key)] = _stringify_attr_value(deepcopy(value))
+    return base_attrs
+
+
 def update_links(
     html: str,
     encoded_sheet_names: dict[str, str],  # sheet names
@@ -98,11 +121,9 @@ def update_links_in_soup(
 
                 # final_href = f'#sheet-{sheet_name}' if sheet_name in usable_names else ''
                 final_href = f"#{enc_sheet_name}"
-                base_attrs = {
-                    key: deepcopy(value)
-                    for key, value in anchor_tag.attrs.items()
-                    if key not in {"href", "class", "target", "rel"}
-                }
+                base_attrs = _collect_base_attrs(
+                    anchor_tag, {"href", "class", "target", "rel"}
+                )
 
                 sharepoint_anchor_tag = soup.new_tag(
                     "a",
@@ -139,11 +160,9 @@ def update_links_in_soup(
                 anchor_tag.replace_with(sharepoint_anchor_tag, js_anchor_tag)
         else:
             if update_ext_links and _is_rewritable_external_href(href):
-                base_attrs = {
-                    key: deepcopy(value)
-                    for key, value in anchor_tag.attrs.items()
-                    if key not in {"href", "class", "target", "rel"}
-                }
+                base_attrs = _collect_base_attrs(
+                    anchor_tag, {"href", "class", "target", "rel"}
+                )
                 target = anchor_tag.get("target")
                 resolved_target = (
                     target if isinstance(target, str) and target else "_blank"
