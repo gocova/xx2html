@@ -6,15 +6,9 @@ on:
       - "v*.*.*"
 
 jobs:
-  publish:
-    name: Publish To PyPI
+  build_verify:
+    name: Build + Artifact Checks
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-    environment:
-      name: pypi
-      url: https://pypi.org/project/xx2html/
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,15 +20,23 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure checkout includes the pushed tag
+        run: |
+          if ! git tag --points-at HEAD | grep -Fxq "${GITHUB_REF_NAME}"; then
+            echo "Expected HEAD to include tag '${GITHUB_REF_NAME}', but found:"
+            git tag --points-at HEAD || true
+            exit 1
+          fi
+      
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install PDM
+      - name: Install PDM and Twine
         run: |
           python -m pip install --upgrade pip
-          python -m pip install pdm twine
+          python -m pip install "pdm>=2.26.0" "twine>=6.1.0"
 
       - name: Check lockfile is up to date
         run: pdm lock --check
@@ -49,15 +51,45 @@ jobs:
             pdm-${{ runner.os }}-
 
       - name: Install dependencies
-        run: pdm sync --group dev
+        run: pdm sync -G dev
 
-      - name: Build distributions
+      - name: Build
         run: pdm build
 
-      - name: Check distributions
+      - name: Check artifacts
         run: python -m twine check dist/*
 
-      - name: Publish to PyPI (Trusted Publishing)
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Wheel smoke test
+        run: |
+          python -m venv /tmp/mvin-wheel-smoke
+          . /tmp/mvin-wheel-smoke/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl
+          python -c "from mvin import TokenNumber, TokenOperator; from mvin.interpreter import get_interpreter; run = get_interpreter([TokenNumber(1), TokenOperator('+'), TokenNumber(2)]); assert run is not None and run({}) == 3"
+
+      - name: Upload distribution artifacts
+        uses: actions/upload-artifact@v4
         with:
-          packages-dir: dist/
+          name: python-package-distributions
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: [build_verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/project/xx2html/
+    steps:
+      - name: Download distribution artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
