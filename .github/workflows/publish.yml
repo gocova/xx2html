@@ -23,6 +23,8 @@ jobs:
 
       - name: Validate PyPI tag version (PEP 440)
         run: |
+          echo "Tag '${GITHUB_REF_NAME}'"
+          echo "Tag '${{ github.ref_name }}'"
           if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+((a|b|rc)[0-9]+)?(\.post[0-9]+)?(\.dev[0-9]+)?$ ]]; then
             echo "Tag '${GITHUB_REF_NAME}' must match vMAJOR.MINOR.PATCH[pre][.postN][.devN] and must not include +local metadata"
             exit 1
@@ -52,7 +54,7 @@ jobs:
         run: pdm sync --group dev
 
       - name: Build package
-        run: pdm build --no-sdist # Sometimes sdist triggers the metadata check differently
+        run: PDM_BUILD_SCM_VERSION=${{ github.ref_name }} pdm build
 
       - name: Check distributions
         run: python -m twine check dist/*
