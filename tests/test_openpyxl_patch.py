@@ -107,6 +107,61 @@ class CovaParseCellTests(unittest.TestCase):
         self.assertEqual("s", parsed["data_type"])
         self.assertEqual("plain-text", parsed["value"])
 
+    def test_invalid_style_id_falls_back_to_zero_and_warns(self):
+        parser = _make_parser()
+        cell_element = _make_cell_element(data_type="n", style_id="bad", value="1")
+
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always")
+            parsed = cova_parse_cell(parser, cell_element)
+
+        self.assertEqual(0, parsed["style_id"])
+        self.assertTrue(
+            any("invalid style id" in str(w.message) for w in warning_records)
+        )
+
+    def test_invalid_shared_string_index_becomes_error_cell(self):
+        parser = _make_parser()
+        cell_element = _make_cell_element(data_type="s", value="99")
+
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always")
+            parsed = cova_parse_cell(parser, cell_element)
+
+        self.assertEqual("e", parsed["data_type"])
+        self.assertEqual("#VALUE!", parsed["value"])
+        self.assertTrue(
+            any("invalid shared string index" in str(w.message) for w in warning_records)
+        )
+
+    def test_invalid_boolean_value_becomes_error_cell(self):
+        parser = _make_parser()
+        cell_element = _make_cell_element(data_type="b", value="not-a-bool")
+
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always")
+            parsed = cova_parse_cell(parser, cell_element)
+
+        self.assertEqual("e", parsed["data_type"])
+        self.assertEqual("#VALUE!", parsed["value"])
+        self.assertTrue(
+            any("invalid boolean value" in str(w.message) for w in warning_records)
+        )
+
+    def test_invalid_iso8601_value_becomes_error_cell(self):
+        parser = _make_parser()
+        cell_element = _make_cell_element(data_type="d", value="not-a-date")
+
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always")
+            parsed = cova_parse_cell(parser, cell_element)
+
+        self.assertEqual("e", parsed["data_type"])
+        self.assertEqual("#VALUE!", parsed["value"])
+        self.assertTrue(
+            any("invalid ISO8601 date value" in str(w.message) for w in warning_records)
+        )
+
 
 class CovaBindCellsTests(unittest.TestCase):
     def test_bind_cells_creates_covacell_and_updates_current_row(self):
@@ -147,6 +202,42 @@ class CovaBindCellsTests(unittest.TestCase):
         self.assertIs(patch_module.WorkSheetParser.parse_cell, patch_module.cova_parse_cell)
         self.assertIs(
             patch_module.WorksheetReader.bind_cells, patch_module.cova_bind_cells
+        )
+
+    def test_bind_cells_falls_back_to_default_style_for_out_of_range_style_id(self):
+        workbook = Workbook()
+        worksheet = workbook.active
+        parser = SimpleNamespace(
+            parse=lambda: iter(
+                [
+                    (
+                        1,
+                        [
+                            {
+                                "style_id": 999,
+                                "row": 1,
+                                "column": 1,
+                                "value": "fallback",
+                                "data_type": "s",
+                                "vm_id": "7",
+                            }
+                        ],
+                    )
+                ]
+            )
+        )
+        reader = SimpleNamespace(parser=parser, ws=worksheet)
+
+        with warnings.catch_warnings(record=True) as warning_records:
+            warnings.simplefilter("always")
+            cova_bind_cells(reader)
+
+        bound_cell = worksheet._cells[(1, 1)]
+        self.assertIsInstance(bound_cell, CovaCell)
+        self.assertEqual("fallback", bound_cell._value)
+        self.assertEqual("7", bound_cell._vm_id)
+        self.assertTrue(
+            any("out-of-range style id" in str(w.message) for w in warning_records)
         )
 
 

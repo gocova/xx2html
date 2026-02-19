@@ -374,8 +374,12 @@ def cova_render_table(
                     attrs_str=render_attrs(cell["attrs"]),
                     styles_str=render_inline_styles(cell["style"]),
                     formatted_images="\n".join(formatted_images),
-                    incell_image="<img ></img>" if isinstance(cell["vm_id"], str) else "",
-                    classes_str=" ".join(cell["classes"]),
+                    incell_image=(
+                        '<img alt="" loading="lazy" decoding="async" />'
+                        if isinstance(cell["vm_id"], str)
+                        else ""
+                    ),
+                    classes_str=" ".join(sorted(cell["classes"])),
                     **cell,
                 )
             )

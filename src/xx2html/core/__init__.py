@@ -1,6 +1,7 @@
 """Core transformation API for converting XLSX workbooks to HTML."""
 
 import logging
+import os
 from zipfile import ZipFile
 
 from openpyxl import load_workbook
@@ -28,6 +29,13 @@ from condif2css.color import argb_to_css
 from condif2css.css import CssBuilder, CssRulesRegistry, create_get_css_from_cell
 
 _PATCHES_APPLIED = False
+
+
+def _paths_refer_to_same_file(path_a: str, path_b: str) -> bool:
+    try:
+        return os.path.samefile(path_a, path_b)
+    except OSError:
+        return os.path.abspath(path_a) == os.path.abspath(path_b)
 
 
 def apply_openpyxl_patches() -> None:
@@ -70,6 +78,9 @@ def create_xlsx_transform(
         workbook = None
         workbook_archive = None
         try:
+            if _paths_refer_to_same_file(source, dest):
+                raise ValueError("Source and destination paths must be different.")
+
             logging.info(f"Transform (out): Opening '{dest}' for writing...")
             with open(dest, "w", encoding="utf-8") as output:
                 sheet_navigation_links = []
@@ -205,10 +216,61 @@ def create_xlsx_transform(
                     workbook._differential_styles,  # type: ignore
                     DifferentialStyleList,
                 ):
+                    differential_styles = workbook._differential_styles  # type: ignore
+                    differential_styles_list = getattr(
+                        differential_styles, "styles", None
+                    )
+                    differential_styles_count = (
+                        len(differential_styles_list)
+                        if isinstance(differential_styles_list, list)
+                        else None
+                    )
                     for _, details in conditional_formatting_rule_details.items():
                         sheet_name, cell_ref, _, dxf_id, _ = details
+                        if not isinstance(dxf_id, int):
+                            logging.warning(
+                                "Transform (wb|cf): non-integer dxf_id for %s!%s: %r",
+                                sheet_name,
+                                cell_ref,
+                                dxf_id,
+                            )
+                            continue
+                        if dxf_id < 0:
+                            logging.warning(
+                                "Transform (wb|cf): negative dxf_id for %s!%s: %d",
+                                sheet_name,
+                                cell_ref,
+                                dxf_id,
+                            )
+                            continue
+                        if (
+                            isinstance(differential_styles_count, int)
+                            and dxf_id >= differential_styles_count
+                        ):
+                            logging.warning(
+                                "Transform (wb|cf): dxf_id out of range for %s!%s: %d (size=%d)",
+                                sheet_name,
+                                cell_ref,
+                                dxf_id,
+                                differential_styles_count,
+                            )
+                            continue
+
+                        try:
+                            if isinstance(differential_styles_list, list):
+                                differential_style = differential_styles_list[dxf_id]
+                            else:
+                                differential_style = differential_styles[dxf_id]
+                        except (IndexError, KeyError, TypeError):
+                            logging.warning(
+                                "Transform (wb|cf): unable to resolve dxf_id for %s!%s: %r",
+                                sheet_name,
+                                cell_ref,
+                                dxf_id,
+                            )
+                            continue
                         class_names = get_cf_css_from_diff(
-                            workbook._differential_styles[dxf_id],  # type: ignore
+                            differential_style,
                             is_important=True,
                         )
                         cf_style_relations.append((sheet_name, cell_ref, class_names))

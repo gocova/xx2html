@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import shutil
 from pathlib import Path
 
 from xx2html import create_xlsx_transform
@@ -57,6 +58,20 @@ class TransformFailureTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIsInstance(err, str)
         self.assertIn("IsADirectoryError", err)
+
+    def test_same_source_and_destination_path_returns_false_and_error(self):
+        transform = _build_transform()
+        source_fixture = FIXTURES_DIR / "merged_cells_cf.xlsx"
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            source_file = Path(tmp_dir) / "same.xlsx"
+            shutil.copy2(source_fixture, source_file)
+            ok, err = transform(str(source_file), str(source_file), "en_US")
+
+        self.assertFalse(ok)
+        self.assertIsInstance(err, str)
+        self.assertIn("ValueError", err)
+        self.assertIn("Source and destination paths must be different", err)
 
 
 if __name__ == "__main__":

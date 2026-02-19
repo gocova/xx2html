@@ -31,11 +31,18 @@ def cova_parse_cell(self, element) -> dict[str, object]:
     """
     data_type = element.get("t", "n")
     coordinate = element.get("r")
-    style_id = element.get("s", 0)
+    raw_style_id = element.get("s", 0)
+    style_id = 0
     vm_id = element.get("vm", None)
 
-    if style_id:
-        style_id = int(style_id)
+    try:
+        if raw_style_id not in (None, ""):
+            style_id = int(raw_style_id)
+    except (TypeError, ValueError):
+        warn(
+            f"Cell {coordinate} has an invalid style id {raw_style_id!r}. Falling back to style 0."
+        )
+        style_id = 0
 
     # if vm_id:
     #     vm_id = int(vm_id)
@@ -58,8 +65,15 @@ def cova_parse_cell(self, element) -> dict[str, object]:
 
     elif value is not None:
         if data_type == "n":
-            value = _cast_number(value)
-            if style_id in self.date_formats:
+            try:
+                value = _cast_number(value)
+            except (TypeError, ValueError):
+                warn(
+                    f"Cell {coordinate} has an invalid numeric value {value!r}. The cell will be treated as an error."
+                )
+                data_type = "e"
+                value = "#VALUE!"
+            if data_type == "n" and style_id in self.date_formats:
                 data_type = "d"
                 try:
                     value = from_excel(
@@ -71,13 +85,34 @@ def cova_parse_cell(self, element) -> dict[str, object]:
                     data_type = "e"
                     value = "#VALUE!"
         elif data_type == "s":
-            value = self.shared_strings[int(value)]
+            try:
+                value = self.shared_strings[int(value)]
+            except (TypeError, ValueError, IndexError):
+                warn(
+                    f"Cell {coordinate} references an invalid shared string index {value!r}. The cell will be treated as an error."
+                )
+                data_type = "e"
+                value = "#VALUE!"
         elif data_type == "b":
-            value = bool(int(value))
+            try:
+                value = bool(int(value))
+            except (TypeError, ValueError):
+                warn(
+                    f"Cell {coordinate} has an invalid boolean value {value!r}. The cell will be treated as an error."
+                )
+                data_type = "e"
+                value = "#VALUE!"
         elif data_type == "str":
             data_type = "s"
         elif data_type == "d":
-            value = from_ISO8601(value)
+            try:
+                value = from_ISO8601(value)
+            except (TypeError, ValueError):
+                warn(
+                    f"Cell {coordinate} has an invalid ISO8601 date value {value!r}. The cell will be treated as an error."
+                )
+                data_type = "e"
+                value = "#VALUE!"
 
     elif data_type == "inlineStr":
         child = element.find(INLINE_STRING)
@@ -110,7 +145,18 @@ def cova_bind_cells(self) -> None:
     """
     for idx, row in self.parser.parse():
         for cell in row:
-            style = self.ws.parent._cell_styles[cell["style_id"]]
+            style_id = cell.get("style_id", 0)
+            cell_styles = self.ws.parent._cell_styles
+            if (
+                not isinstance(style_id, int)
+                or style_id < 0
+                or style_id >= len(cell_styles)
+            ):
+                warn(
+                    f"Cell {cell.get('row')}:{cell.get('column')} has an out-of-range style id {style_id!r}. Falling back to style 0."
+                )
+                style_id = 0
+            style = cell_styles[style_id]
             cova_cell = CovaCell(
                 self.ws,
                 row=cell["row"],

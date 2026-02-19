@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from openpyxl import Workbook
+
 import xx2html.core as core_module
 from xx2html import create_xlsx_transform
 
@@ -65,6 +67,65 @@ class ConditionalFormattingPipelineTests(unittest.TestCase):
 
         self.assertTrue(ok, err)
         self.assertEqual(0, process_mock.call_count)
+
+    def test_apply_cf_ignores_out_of_range_dxf_id(self):
+        source_file = FIXTURES_DIR / "merged_cells_cf.xlsx"
+        transform = create_xlsx_transform(
+            sheet_html=SHEET_HTML,
+            sheetname_html=SHEETNAME_HTML,
+            index_html=INDEX_HTML,
+            fonts_html="",
+            core_css="",
+            user_css="",
+            safari_js="",
+            apply_cf=True,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir) / "output.html"
+            with patch(
+                "xx2html.core.process_conditional_formatting",
+                return_value={
+                    "invalid": ("Data", "C1", None, 999, None),
+                },
+            ):
+                ok, err = transform(str(source_file), str(output_file), "en_US")
+            html = output_file.read_text(encoding="utf-8")
+
+        self.assertTrue(ok, err)
+        self.assertIn("/*conditional formatting*/", html)
+        self.assertNotIn("xx2h_cf", html)
+
+    def test_transform_succeeds_when_loader_returns_all_hidden_sheets(self):
+        source_file = FIXTURES_DIR / "merged_cells_cf.xlsx"
+        hidden_workbook = Workbook()
+        hidden_worksheet = hidden_workbook.active
+        hidden_worksheet.title = "Hidden"
+        hidden_worksheet.sheet_state = "hidden"
+
+        transform = create_xlsx_transform(
+            sheet_html=SHEET_HTML,
+            sheetname_html=SHEETNAME_HTML,
+            index_html=INDEX_HTML,
+            fonts_html="",
+            core_css="",
+            user_css="",
+            safari_js="",
+            apply_cf=False,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            output_file = Path(tmp_dir) / "output.html"
+            with patch("xx2html.core.load_workbook", return_value=hidden_workbook), patch(
+                "xx2html.core.get_theme_colors", return_value={}
+            ):
+                ok, err = transform(str(source_file), str(output_file), "en_US")
+            html = output_file.read_text(encoding="utf-8")
+
+        self.assertTrue(ok, err)
+        self.assertIn("<html", html.lower())
+        self.assertNotIn('data-sheet="', html)
+        self.assertNotIn('class="sheet-nav"', html)
 
 
 if __name__ == "__main__":

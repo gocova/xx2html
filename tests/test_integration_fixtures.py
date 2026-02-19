@@ -56,6 +56,8 @@ class FixturesIntegrationTests(unittest.TestCase):
         self.assertIn("incell-image", html)
         self.assertIn("content:url(\"data:image/png;base64", html)
         self.assertIn("object-fit: contain;", html)
+        self.assertIn('loading="lazy"', html)
+        self.assertIn('decoding="async"', html)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,35 @@
 """Rewrite worksheet and external links in generated HTML."""
 
 from copy import deepcopy
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+
+
+def _normalize_space_tokens(value: object) -> list[str]:
+    if isinstance(value, str):
+        return [token for token in value.split() if token]
+    if isinstance(value, (list, tuple, set)):
+        tokens: list[str] = []
+        for item in value:
+            if isinstance(item, str):
+                tokens.extend([token for token in item.split() if token])
+        return tokens
+    return []
+
+
+def _merge_tokens(value: object, *required_tokens: str) -> str:
+    merged_tokens: list[str] = []
+    for token in _normalize_space_tokens(value) + list(required_tokens):
+        if token and token not in merged_tokens:
+            merged_tokens.append(token)
+    return " ".join(merged_tokens)
+
+
+def _is_rewritable_external_href(href: str) -> bool:
+    if href.startswith("//"):
+        return True
+    parsed_href = urlparse(href)
+    return parsed_href.scheme in {"http", "https"}
 
 
 def update_links(
@@ -32,7 +60,8 @@ def update_links(
         return local_reference
 
     for anchor_tag in soup.find_all("a"):
-        if "class" in anchor_tag.attrs and "xlsx_sheet-link" in anchor_tag["class"]:
+        current_classes = _normalize_space_tokens(anchor_tag.get("class"))
+        if "xlsx_sheet-link" in current_classes:
             continue
 
         href = anchor_tag.get("href")
@@ -52,20 +81,33 @@ def update_links(
 
                 # final_href = f'#sheet-{sheet_name}' if sheet_name in usable_names else ''
                 final_href = f"#{enc_sheet_name}"
+                base_attrs = {
+                    key: deepcopy(value)
+                    for key, value in anchor_tag.attrs.items()
+                    if key not in {"href", "class", "target", "rel"}
+                }
 
                 sharepoint_anchor_tag = soup.new_tag(
                     "a",
-                    attrs={
+                    attrs=base_attrs
+                    | {
                         "href": f"about:srcdoc{final_href}",
-                        "class": "xlsx_sheet-link sharepoint_visible",
+                        "class": _merge_tokens(
+                            anchor_tag.get("class"),
+                            "xlsx_sheet-link",
+                            "sharepoint_visible",
+                        ),
                     },
                 )
 
                 js_anchor_tag = soup.new_tag(
                     "a",
-                    attrs={
+                    attrs=base_attrs
+                    | {
                         "href": final_href,
-                        "class": "xlsx_sheet-link js_visible",
+                        "class": _merge_tokens(
+                            anchor_tag.get("class"), "xlsx_sheet-link", "js_visible"
+                        ),
                         # , 'target': '_blank'
                     },
                 )
@@ -79,14 +121,28 @@ def update_links(
 
                 anchor_tag.replace_with(sharepoint_anchor_tag, js_anchor_tag)
         else:
-            if update_ext_links:
+            if update_ext_links and _is_rewritable_external_href(href):
+                base_attrs = {
+                    key: deepcopy(value)
+                    for key, value in anchor_tag.attrs.items()
+                    if key not in {"href", "class", "target", "rel"}
+                }
+                target = anchor_tag.get("target")
+                resolved_target = (
+                    target if isinstance(target, str) and target else "_blank"
+                )
                 external_anchor_tag = soup.new_tag(
                     "a",
-                    attrs={
+                    attrs=base_attrs
+                    | {
                         "href": href,
-                        "class": "xlsx_sheet-link js_visible",
-                        "target": "_blank",
-                        "rel": "noopener noreferrer",
+                        "class": _merge_tokens(
+                            anchor_tag.get("class"), "xlsx_sheet-link", "js_visible"
+                        ),
+                        "target": resolved_target,
+                        "rel": _merge_tokens(
+                            anchor_tag.get("rel"), "noopener", "noreferrer"
+                        ),
                     },
                 )
                 for child in anchor_tag.contents:
